@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ウィジェットのサイズ計算式は 70 x N − 30 (API Level 14以降) -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:initialKeyguardLayout="@layout/widget_flash_light"
+                    android:initialLayout="@layout/widget_flash_light"
+                    android:minHeight="40dp"
+                    android:minWidth="40dp"
+                    android:previewImage="@drawable/bg_circle_off"
+                    android:resizeMode="horizontal|vertical"
+                    android:updatePeriodMillis="86400000"
+                    android:widgetCategory="home_screen">
+</appwidget-provider>
