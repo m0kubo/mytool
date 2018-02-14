@@ -107,15 +107,7 @@ public class WidgetController {
      * @param resourceId 設定する画像のリソースID
      */
     public void setImageResource(Context context, int viewId, int resourceId) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-
-        int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, mWidgetClass));
-        for (int appWidgetId : ids) {
-            RemoteViews views = new RemoteViews(context.getPackageName(), mLayoutId);
-            views.setInt(viewId, "setImageResource", resourceId);
-            // Instruct the widget manager to update the widget
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-        }
+        setInt(context, viewId, "setImageResource", resourceId);
     }
 
     /**
@@ -125,12 +117,16 @@ public class WidgetController {
      * @param resourceId 設定する画像のリソースID
      */
     public void setBackgroundResource(Context context, int viewId, int resourceId) {
+        setInt(context, viewId, "setBackgroundResource", resourceId);
+    }
+
+    private void setInt(Context context, int viewId, String methodName, int value) {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 
         int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, mWidgetClass));
         for (int appWidgetId : ids) {
             RemoteViews views = new RemoteViews(context.getPackageName(), mLayoutId);
-            views.setInt(viewId, "setBackgroundResource", resourceId);
+            views.setInt(viewId, methodName, value);
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
