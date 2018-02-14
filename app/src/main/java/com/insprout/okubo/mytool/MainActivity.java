@@ -1,6 +1,7 @@
 package com.insprout.okubo.mytool;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -56,6 +57,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initView() {
         mRulerView = findViewById(R.id.v_ruler);
+        mRulerView.setLineColor(Color.BLUE);
+        mRulerView.setTextColor(Color.GRAY);
         mRulerView.setAdjustRate(mAdjustRate);
 
         mButton = findViewById(R.id.fab);

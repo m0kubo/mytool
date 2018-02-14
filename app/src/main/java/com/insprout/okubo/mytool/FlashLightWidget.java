@@ -58,6 +58,7 @@ public class FlashLightWidget extends AppWidgetProvider {
     }
 
     public static void switchButtonImage(Context context, boolean flashing) {
+        // ボタンの foreground、background画像を設定
         getWidgetController().setImageResource(context, R.id.button, flashing ? R.mipmap.ic_light_on : R.mipmap.ic_light_off);
         getWidgetController().setBackgroundResource(context, R.id.button, flashing ? R.drawable.bg_circle_on : R.drawable.bg_circle_off);
     }

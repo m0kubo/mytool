@@ -12,6 +12,7 @@ import android.view.View;
 
 /**
  * Created by okubo on 2018/02/08.
+ * メートル単位系の スケールを表示するView
  */
 
 public class RulerView extends View {
@@ -60,14 +61,30 @@ public class RulerView extends View {
         mContext = context;
         mPaint = new Paint();
 
-        mLineColor = Color.BLUE;
-        mTextColor = Color.GRAY;
+        mLineColor = Color.BLACK;
+        mTextColor = Color.BLACK;
         mYDotsPer1Millimeter = context.getResources().getDisplayMetrics().ydpi / 25.4f;
         mAdjustRate = 1.0f;
     }
 
+
+    public void setLineColor(int color) {
+        mLineColor = color;
+    }
+
+    public void setTextColor(int color) {
+        mTextColor = color;
+    }
+
+    /**
+     * 目盛りの誤差を補正する係数を設定する。
+     * (目盛りの描画は 端末に記録されている DPI(dots per inch)値を基準に行われるが、端末により誤差がある為)
+     * 0.9(-10%)～1.1(+10%)まで指定可。それ以外は無視される。
+     *
+     * @param adjustRate 目盛りのサイズを補正する係数。0.9～1.1の値が有効
+     */
     public void setAdjustRate(float adjustRate) {
-        if (adjustRate >= 0.5f && adjustRate <= 1.5f) mAdjustRate = adjustRate;
+        if (adjustRate >= 0.9f && adjustRate <= 1.1f) mAdjustRate = adjustRate;
     }
 
 
@@ -84,18 +101,19 @@ public class RulerView extends View {
         mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
 
         float y = minY;
-        int i = 0;
+        int mm = 0;                                             // 描画する目盛りの ミリメートル値
         while(y <= maxY) {
-            y = i * mYDotsPer1Millimeter * mAdjustRate + minY;
+            y = mm * mYDotsPer1Millimeter * mAdjustRate + minY;
 
             scaleLabel = null;
-            if (mod(i, 10) == 0) {
-                // 10の倍数の時
+            if (mod(mm, 10) == 0) {
+                // 10mmの目盛り
                 lineWidth = LINE_WIDTH_SCALE_10;
                 lineLength = LINE_LENGTH_SCALE_10;
 
-                if (i > 0) {
-                    scaleLabel = Integer.toString(i / 10);
+                // 数字の描画 (0は 領域からはみ出てしまうので、表記しない)
+                if (mm > 0) {
+                    scaleLabel = Integer.toString(mm / 10);
                     mPaint.setColor(mTextColor);
                     mPaint.setStrokeWidth(1);
                     mPaint.setTextSize(SIZE_SCALE_LABEL * mYDotsPer1Millimeter);
@@ -106,13 +124,13 @@ public class RulerView extends View {
                     canvas.drawText(scaleLabel, maxX - MARGIN_SCALE_LABEL * mYDotsPer1Millimeter - labelWidth, y + labelHeight / 3, mPaint);
                 }
 
-            } else if (mod(i, 5) == 0) {
-                // 5の倍数の時
+            } else if (mod(mm, 5) == 0) {
+                // 5mmの目盛り
                 lineWidth = LINE_WIDTH_SCALE_05;
                 lineLength = LINE_LENGTH_SCALE_05;
 
             } else {
-                // その他
+                // 1mmの通常の目盛り
                 lineWidth = LINE_WIDTH_SCALE_01;
                 lineLength = LINE_LENGTH_SCALE_01;
             }
@@ -120,7 +138,7 @@ public class RulerView extends View {
             mPaint.setStrokeWidth(round(lineWidth * mYDotsPer1Millimeter));
             canvas.drawLine(maxX - lineLength * mYDotsPer1Millimeter, y, maxX, y, mPaint);
 
-            i++;
+            mm++;
         }
     }
 
