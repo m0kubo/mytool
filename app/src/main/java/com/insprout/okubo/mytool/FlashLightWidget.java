@@ -11,12 +11,13 @@ import android.util.Log;
  * Implementation of App Widget functionality.
  */
 public class FlashLightWidget extends AppWidgetProvider {
+    private final static String TAG = "widget";
     private final static String ACTION_CLICK = "ACTION_CLICK";
 
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        Log.d("widget", "onUpdate()");
+        Log.d(TAG, "onUpdate()");
 
         Intent intent = new Intent(ACTION_CLICK);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -37,11 +38,13 @@ public class FlashLightWidget extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        Log.d("widget", "onReceive() : action=" + intent.getAction());
+        Log.d(TAG, "onReceive() : action=" + intent.getAction());
 
         if (ACTION_CLICK.equals(intent.getAction())) {
             // FlashLight点灯/消灯
-            boolean flashing = FlashLight.getInstance(context.getApplicationContext()).toggle();
+//            boolean flashing = FlashLight.getInstance(context.getApplicationContext()).toggle();
+            FlashLight flash = FlashLight.getInstance(context);
+            boolean flashing = flash.toggle();
             // FlashLightの状態を ボタンに反映
             switchButtonImage(context, flashing);
         }

@@ -17,9 +17,7 @@ public class Settings {
     }
 
     public static void putAdjustRate(Context context, int value) {
-        SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        edit.putInt(KEY_ADJUST_RATE, value);
-        edit.apply();
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putInt(KEY_ADJUST_RATE, value).apply();
     }
 
 }

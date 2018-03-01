@@ -65,24 +65,6 @@ public class WidgetController {
     }
 
     /**
-     * Widgetの指定の Viewに対して 有効/無効状態を設定する
-     * @param context コンテキスト
-     * @param viewId 目的のViewのID
-     * @param enabled 設定する値
-     */
-    public void setEnabled(Context context, int viewId, boolean enabled) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-
-        int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, mWidgetClass));
-        for (int appWidgetId : ids) {
-            RemoteViews views = new RemoteViews(context.getPackageName(), mLayoutId);
-            views.setBoolean(viewId, "setEnabled", enabled);
-            // Instruct the widget manager to update the widget
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-        }
-    }
-
-    /**
      * Widgetの指定の Viewに対して 表示状態を設定する
      * @param context コンテキスト
      * @param viewId 目的のViewのID
@@ -98,6 +80,16 @@ public class WidgetController {
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
+    }
+
+    /**
+     * Widgetの指定の Viewに対して 有効/無効状態を設定する
+     * @param context コンテキスト
+     * @param viewId 目的のViewのID
+     * @param enabled 設定する値
+     */
+    public void setEnabled(Context context, int viewId, boolean enabled) {
+        setBoolean(context, viewId, "setEnabled", enabled);
     }
 
     /**
@@ -120,13 +112,40 @@ public class WidgetController {
         setInt(context, viewId, "setBackgroundResource", resourceId);
     }
 
-    private void setInt(Context context, int viewId, String methodName, int value) {
+
+    /**
+     * Widgetの Viewに対して int型のパラメータで指定のメソッドを実行する
+     * @param context コンテキスト
+     * @param viewId 目的のViewのID
+     * @param methodName 実行するメソッド
+     * @param value メソッドに与えるint型の値
+     */
+    public void setInt(Context context, int viewId, String methodName, int value) {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 
         int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, mWidgetClass));
         for (int appWidgetId : ids) {
             RemoteViews views = new RemoteViews(context.getPackageName(), mLayoutId);
             views.setInt(viewId, methodName, value);
+            // Instruct the widget manager to update the widget
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+        }
+    }
+
+    /**
+     * Widgetの Viewに対して boolean型のパラメータで指定のメソッドを実行する
+     * @param context コンテキスト
+     * @param viewId 目的のViewのID
+     * @param methodName 実行するメソッド
+     * @param value メソッドに与えるboolean型の値
+     */
+    public void setBoolean(Context context, int viewId, String methodName, boolean value) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+
+        int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, mWidgetClass));
+        for (int appWidgetId : ids) {
+            RemoteViews views = new RemoteViews(context.getPackageName(), mLayoutId);
+            views.setBoolean(viewId, methodName, value);
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }

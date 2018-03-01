@@ -3,18 +3,21 @@ package com.insprout.okubo.mytool;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.util.Log;
 
 /**
  * Created by okubo on 2018/02/08.
  */
 
 public class FlashLight {
+    private final static String TAG = "FlashLight";
 
     private static FlashLight mInstance = null;
 
     private Context mContext;
     private Camera mOpenedCamera = null;
     private boolean mFlashing = false;
+
 
     public static FlashLight getInstance(Context context) {
         if (mInstance == null) {
@@ -49,10 +52,15 @@ public class FlashLight {
             return;
         }
 
+        Log.d(TAG, "turnOn(): mFlashing = " + mFlashing);
         if (!mFlashing) {
             if (mOpenedCamera == null) {
+                Log.d(TAG, "turnOn(): mOpenedCamera = null");
                 mOpenedCamera = openCamera();
-                if (mOpenedCamera == null) return;
+                if (mOpenedCamera == null) {
+                    Log.d(TAG, "turnOn(): mOpenedCamera = NULL");
+                    return;
+                }
             }
             turnOnFlash(mOpenedCamera);
             mFlashing = true;
@@ -73,8 +81,10 @@ public class FlashLight {
 
     public boolean toggle() {
         if (mFlashing) {
+            Log.d(TAG, "hasFlash: try turn off");
             turnOff();
         } else {
+            Log.d(TAG, "hasFlash: try turn ON");
             turnOn();
         }
         return mFlashing;
@@ -99,7 +109,10 @@ public class FlashLight {
     }
 
     private static boolean hasFlash(Context context) {
-        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+//        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+        boolean hasFlash = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+        Log.d(TAG, "hasFlash:" + hasFlash);
+        return hasFlash;
     }
 
     private static void turnOnFlash(Camera camera) {
