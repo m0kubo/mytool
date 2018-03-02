@@ -1,11 +1,9 @@
 package com.insprout.okubo.mytool;
 
-import android.content.DialogInterface;
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,10 +12,12 @@ import android.widget.NumberPicker;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogUtils.DialogEventListener {
 
-    final static int MAX_ADJUST_MILLI_VALUE = 50;
-    final static int STEP_ADJUST_MILLI_VALUE = 1;
+    private final static int REQ_ADJUST_SCALE = 100;
+
+    private final static int MAX_ADJUST_MILLI_VALUE = 50;
+    private final static int STEP_ADJUST_MILLI_VALUE = 1;
 
     private FlashLight mFlashLight;
     private RulerView mRulerView;
@@ -39,7 +39,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     private void initVars() {
-//        mFlashLight = new FlashLight(this);
         mFlashLight = FlashLight.getInstance(this);
 
         mAdjustRate = convertRate(Settings.getAdjustRate(this));
@@ -61,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mRulerView.setTextColor(Color.GRAY);
         mRulerView.setAdjustRate(mAdjustRate);
 
-        mButton = findViewById(R.id.fab);
+        mButton = findViewById(R.id.btn_flash);
         mButton.setSelected(mFlashLight.isFlashing());
     }
 
@@ -81,39 +80,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return true;
     }
 
-    private void adjustScale() {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        final View dialogView = inflater.inflate(R.layout.dlg_adjust_scale, null);
-        final NumberPicker picker = dialogView.findViewById(R.id.np_adjust);
-        picker.setMaxValue(mSelectionLabels.length - 1);
-        picker.setMinValue(0);
-        picker.setDisplayedValues(mSelectionLabels);
-        picker.setWrapSelectorWheel(false);
-        // 現在の設定値を 選択しておく
-        int currentRate = Settings.getAdjustRate(this);
-        for (int i=0; i<mSelectionValues.size(); i++) {
-            if (mSelectionValues.get(i) == currentRate) {
-                picker.setValue(i);
-                break;
-            }
-        }
-
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                .setTitle(R.string.action_adjust_scale)
-                .setMessage(R.string.msg_adjust_scale)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        int rate = mSelectionValues.get(picker.getValue());
-                        Settings.putAdjustRate(MainActivity.this, rate);
-                        mAdjustRate = convertRate(rate);
-                        mRulerView.setAdjustRate(mAdjustRate);
-                        mRulerView.invalidate();
-                    }
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .setView(dialogView);
-        builder.show();
-    }
 
     private float convertRate(int rate) {
         return (1.0f + rate / 1000.0f);
@@ -123,7 +89,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.action_adjust_scale:
-                adjustScale();
+                // スケール補正ダイアログを表示する
+                DialogUtils.showCustomDialog(
+                        this,
+                        R.string.action_adjust_scale,
+                        R.string.msg_adjust_scale,
+                        R.layout.dlg_adjust_scale,
+                        android.R.string.ok,
+                        android.R.string.cancel,
+                        REQ_ADJUST_SCALE);
                 return true;
         }
 
@@ -133,14 +107,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         switch(view.getId()) {
-            case R.id.fab:
+            case R.id.btn_flash:
                 boolean flashing = mFlashLight.toggle();
 
                 mButton.setSelected(flashing);
                 // Widgetの ボタンの状態もあわせておく
                 FlashLightWidget.switchButtonImage(this, flashing);
                 break;
+
+            case R.id.btn_viewer:
+                TextViewerActivity.startActivity(this);
+                break;
         }
     }
 
+    @Override
+    public void onDialogEvent(int requestCode, AlertDialog dialog, int which, Object obj) {
+        switch (requestCode) {
+            case REQ_ADJUST_SCALE :
+                switch (which) {
+                    // カスタムDialog 作成イベント
+                    case DialogUtils.EVENT_DIALOG_CREATED:
+                        // 子Viewなどの初期化
+                        if (obj instanceof View) {
+                            // Pickerの選択肢を設定する
+                            NumberPicker picker = ((View)obj).findViewById(R.id.np_adjust);
+                            picker.setMaxValue(mSelectionLabels.length - 1);
+                            picker.setMinValue(0);
+                            picker.setDisplayedValues(mSelectionLabels);
+                            picker.setWrapSelectorWheel(false);
+                            // 現在の設定値を 選択しておく
+                            int index = mSelectionValues.indexOf(Settings.getAdjustRate(this));
+                            if (index >= 0) picker.setValue(index);
+                        }
+                        break;
+
+                    // OKボタン押下
+                    case DialogUtils.EVENT_BUTTON_POSITIVE:
+                        if (obj instanceof View) {
+                            NumberPicker picker = ((View)obj).findViewById(R.id.np_adjust);
+                            int rate = mSelectionValues.get(picker.getValue());
+                            Settings.putAdjustRate(MainActivity.this, rate);
+                            mAdjustRate = convertRate(rate);
+                            mRulerView.setAdjustRate(mAdjustRate);
+                            mRulerView.invalidate();
+                        }
+                        break;
+                }
+                break;
+        }
+    }
 }

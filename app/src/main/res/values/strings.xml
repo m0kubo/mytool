@@ -5,6 +5,17 @@
     <string name="msg_adjust_scale">定規の目盛りは、端末に設定されているpixelの大きさを基準にしていますが、端末により誤差がある場合があります。</string>
     <string name="fmt_adjust_scale">%+.1f %%</string>
 
-    <string name="appwidget_text">EX</string>
     <string name="add_widget">Add widget</string>
+
+    <string name="btn_close">閉じる</string>
+
+    <string name="menu_char_set">文字コード：</string>
+    <string name="menu_font_size">文字サイズ：</string>
+
+    <string name="label_font_size_fmt">%.1f sp</string>
+
+    <string name="toast_view_fmt">ファイルを開きます\n%s</string>
+    <string name="toast_no_file_specified">ファイルが指定されていません</string>
+
+
 </resources>
