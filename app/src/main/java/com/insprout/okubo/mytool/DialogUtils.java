@@ -4,11 +4,17 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 /**
  * Created by okubo on 2018/03/01.
@@ -28,6 +34,10 @@ public class DialogUtils {
     private static final String KEY_DIALOG_NEUTRAL_BUTTON_TEXT = "button.neutral.TEXT";
     private static final String KEY_CHOICE_ARRAY = "choice.ARRAY";
     private static final String KEY_CHOICE_SELECTED = "choice.SELECTED";
+    private static final String KEY_PROGRESS_STYLE = "progress.STYLE";
+
+    private static int STYLE_ALERT_DIALOG = 0;
+    private static int STYLE_PROGRESS_DIALOG = 1;
 
     public static final int RC_NO_LISTENER = -1;
     public static final int EVENT_BUTTON_POSITIVE = DialogInterface.BUTTON_POSITIVE;
@@ -75,7 +85,7 @@ public class DialogUtils {
      */
     public static DialogFragment showButtonsDialog(Activity activity, String title, String message, String labelOk, String labelCancel, String labelNeutral, int requestCode) {
         DialogFragment dialog = BaseDialogFragment.newInstance(requestCode, title, message, labelOk, labelCancel, labelNeutral);
-        dialog.show(activity.getFragmentManager(), TAG_PREFIX + Integer.toHexString(requestCode));
+        dialog.show(activity.getFragmentManager(), buildTag(requestCode));
         return dialog;
     }
 
@@ -192,6 +202,60 @@ public class DialogUtils {
     }
 
 
+    ////////////////////////////////////
+    //
+    // プログレスダイアログ
+    //
+
+    /**
+     * OK/Cancel/Neutralの ボタンを持つダイアログを表示する
+     * @param activity 呼び出すActivity
+     * @param title ダイアログのタイトル文字列 (表示しない場合は nullを指定する)
+     * @param message メッセージ文字列 (表示しない場合は nullを指定する)
+     * @param requestCode Dialogの イベントリスナーに返されるリクエストコード
+     * @return 生成されたDialogFragmentオブジェクト
+     */
+    public static DialogFragment showProgressDialog(Activity activity, String title, String message, int requestCode) {
+        DialogFragment dialog = BaseDialogFragment.newInstance(requestCode, title, message);
+        dialog.show(activity.getFragmentManager(), buildTag(requestCode));
+        return dialog;
+    }
+
+    /**
+     * OKボタンのみの メッセージダイアログを表示する
+     * @param activity 呼び出すActivity
+     * @param title ダイアログのタイトル文字列 (表示しない場合は nullを指定する)
+     * @param message メッセージ文字列 (表示しない場合は nullを指定する)
+     * @return 生成されたDialogFragmentオブジェクト
+     */
+    public static DialogFragment showProgressDialog(Activity activity, String title, String message) {
+        return showProgressDialog(activity, title, message, RC_NO_LISTENER);
+    }
+
+    /**
+     * OKボタンのみの メッセージダイアログを表示する
+     * @param activity 呼び出すActivity
+     * @param titleId ダイアログのタイトルのリソースID (表示しない場合は 0を指定する)
+     * @param messageId メッセージのリソースID (表示しない場合は 0を指定する)
+     * @return 生成されたDialogFragmentオブジェクト
+     */
+    public static DialogFragment showProgressDialog(Activity activity, int titleId, int messageId) {
+        String title = getString(activity, titleId);
+        String message = getString(activity, messageId);
+        return showProgressDialog(activity, title, message);
+    }
+
+    /**
+     * Dialog作成時に与えたリクエストコードを指定して Dialogを 閉じる
+     * @param activity 呼び出すActivity
+     * @param requestCode 作成時に設定した リクエストコード
+     */
+    public static void dismissDialog(Activity activity, int requestCode) {
+        FragmentManager manager = activity.getFragmentManager();
+        DialogFragment dialog = (DialogFragment) manager.findFragmentByTag(buildTag(requestCode));
+        if (dialog != null) dialog.dismissAllowingStateLoss();
+    }
+
 
     ////////////////////////////////////
     //
@@ -199,8 +263,10 @@ public class DialogUtils {
     //
 
     public static class BaseDialogFragment extends DialogFragment implements DialogInterface.OnClickListener, DialogInterface.OnCancelListener {
+        private final static float DIP_PADDING_PROGRESS = 15.0f;
 
         private AlertDialog mAlertDialog = null;
+        private int mStyle = STYLE_ALERT_DIALOG;
         private View mCustomView = null;
         private DialogEventListener mListener = null;
         private int mRequestCode;
@@ -276,6 +342,25 @@ public class DialogUtils {
             return dialogFragment;
         }
 
+        /**
+         * ProgressDialog風の Dialogを作成する。
+         * (API level 26で ProgressDialogが 非推奨になったので、互換部品を用意)
+         * @param requestCode コールバック用Listenerに返す識別値。どのダイアログからのコールバックかを識別する
+         * @param title Dialogのタイトル
+         * @param message Dialogのメッセージ
+         * @return DialogFragmentのインスタンス
+         */
+        public static BaseDialogFragment newInstance(int requestCode, String title, String message) {
+            BaseDialogFragment dialogFragment = new BaseDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt(KEY_REQUEST_CODE, requestCode);
+            args.putString(KEY_DIALOG_TITLE, title);
+            args.putString(KEY_DIALOG_TEXT, message);
+            args.putInt(KEY_PROGRESS_STYLE, STYLE_PROGRESS_DIALOG);
+            dialogFragment.setArguments(args);
+            return dialogFragment;
+        }
+
         @Override
         public void onAttach(Activity activity) {
             super.onAttach(activity);
@@ -287,19 +372,26 @@ public class DialogUtils {
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             mRequestCode = getArguments().getInt(KEY_REQUEST_CODE);
-            mChoiceList = getArguments().getStringArray(KEY_CHOICE_ARRAY);
-            int selected = getArguments().getInt(KEY_CHOICE_SELECTED, 0);
+            mStyle = getArguments().getInt(KEY_PROGRESS_STYLE, STYLE_ALERT_DIALOG);
             String title = getArguments().getString(KEY_DIALOG_TITLE);
             String message = getArguments().getString(KEY_DIALOG_TEXT);
             String buttonOk = getArguments().getString(KEY_DIALOG_POSITIVE_BUTTON_TEXT);
             String buttonCancel = getArguments().getString(KEY_DIALOG_NEGATIVE_BUTTON_TEXT);
             String buttonNeutral = getArguments().getString(KEY_DIALOG_NEUTRAL_BUTTON_TEXT);
+
+            mChoiceList = getArguments().getStringArray(KEY_CHOICE_ARRAY);
+            int selected = getArguments().getInt(KEY_CHOICE_SELECTED, 0);
             int layoutId = getArguments().getInt(KEY_DIALOG_LAYOUT, -1);
             LayoutInflater inflater;
 
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             if (title != null) builder.setTitle(title);
-            if (layoutId != -1 && (inflater = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE)) != null) {
+            if (mStyle == STYLE_PROGRESS_DIALOG) {
+                builder.setView(buildProgressDialog(getActivity(), message));
+                // messageは ProgressDialog(風の)Viewで表示するので、AlertDialogオリジナルの setMessage()を明示的にスキップする。
+                message = null;
+
+            } else if (layoutId != -1 && (inflater = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE)) != null) {
                 // カスタムViewを設定
                 mCustomView = inflater.inflate(layoutId, null);
                 builder.setView(mCustomView);
@@ -327,6 +419,11 @@ public class DialogUtils {
         }
 
         @Override
+        public void dismiss() {
+            dismissAllowingStateLoss();
+        }
+
+        @Override
         public void onClick(DialogInterface dialog, int which) {
             callbackToListener(which);
         }
@@ -351,6 +448,29 @@ public class DialogUtils {
             }
             mListener.onDialogEvent(mRequestCode, mAlertDialog, which, objCallback);
         }
+
+        private View buildProgressDialog(Context context, String message) {
+            int pxPadding = (int)(DIP_PADDING_PROGRESS * getResources().getDisplayMetrics().density);
+
+            // ダイアログのレイアウトを設定
+            LinearLayout layout = new LinearLayout(context);
+            layout.setOrientation(LinearLayout.HORIZONTAL);
+            layout.setVerticalGravity(Gravity.CENTER_VERTICAL);
+            layout.setPadding(pxPadding, pxPadding, pxPadding, pxPadding);
+
+            // プログレス表示 設定
+            ProgressBar progress = new ProgressBar(context);
+            layout.addView(progress);
+
+            // メッセージ 設定
+            TextView tv = new TextView(context);
+            tv.setText(message);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            tv.setPadding(pxPadding, 0, 0, 0);          // progress表示と メッセージの間もマージンをあける
+            layout.addView(tv);
+
+            return layout;
+        }
     }
 
     //////////////////////////
@@ -360,6 +480,10 @@ public class DialogUtils {
     private static String getString(Context context, int resourceId) {
         if (resourceId <= 0) return null;
         return context.getString(resourceId);
+    }
+
+    private static String buildTag(int requestCode) {
+        return TAG_PREFIX + Integer.toHexString(requestCode);
     }
 
 }

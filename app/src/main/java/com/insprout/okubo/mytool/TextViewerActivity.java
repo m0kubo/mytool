@@ -1,6 +1,7 @@
 package com.insprout.okubo.mytool;
 
 import android.app.AlertDialog;
+import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -96,7 +97,6 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
             // 表示ファイルが指定されていないので、前回表示したファイルを開く
             mFileUri = Settings.getFileUri(TextViewerActivity.this);
             if (mFileUri != null) {
-                Toast.makeText(TextViewerActivity.this, getString(R.string.toast_view_fmt, mFileUri.toString()), Toast.LENGTH_SHORT).show();
                 viewFileDelayed(mFileUri, mCharSet);
 
             } else {
@@ -107,10 +107,13 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
     }
 
     private void viewFileDelayed(final Uri fileUri, final String charSet) {
+        String msg = getString(R.string.toast_view_fmt, "");
+        final DialogFragment mProgress = DialogUtils.showProgressDialog(this, msg, mFileUri.toString());
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 viewFile(fileUri, charSet);
+                mProgress.dismiss();
             }
         }, 100);
     }
