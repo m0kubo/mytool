@@ -229,7 +229,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
         for (int i=0; i<mFontSizeArray.length; i++) {
             arrayLabels[i] = getFontSizeLabel(mFontSizeArray[i]);
         }
-        DialogUtils.showSelectDialog(
+        DialogUtils.showItemSelectDialog(
                 this,
                 R.string.menu_font_size,
                 arrayLabels,
@@ -241,7 +241,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 
     private void changeCharSet() {
         int selected = Arrays.asList(mCharSetArray).indexOf(mCharSet);
-        DialogUtils.showSelectDialog(
+        DialogUtils.showItemSelectDialog(
                 this,
                 R.string.menu_char_set,
                 mCharSetArray,
