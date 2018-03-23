@@ -156,7 +156,7 @@ public class DialogUi {
      */
     public static DialogFragment showItemSelectDialog(final Activity activity, String title, String[] list, int selected, String labelOk, String labelCancel, int requestCode) {
         DialogFragment dialog = BaseDialogFragment.newInstance(requestCode, title, list, selected, labelOk, labelCancel);
-        dialog.show(activity.getFragmentManager(), TAG_PREFIX + Integer.toHexString(requestCode));
+        dialog.show(activity.getFragmentManager(), buildTag(requestCode));
         return dialog;
     }
 
@@ -239,7 +239,7 @@ public class DialogUi {
      */
     public static DialogFragment showCustomDialog(final Activity activity, String title, String message, int layoutId, String labelOk, String labelCancel, int requestCode) {
         DialogFragment dialog = BaseDialogFragment.newInstance(requestCode, title, message, layoutId, labelOk, labelCancel);
-        dialog.show(activity.getFragmentManager(), TAG_PREFIX + Integer.toHexString(requestCode));
+        dialog.show(activity.getFragmentManager(), buildTag(requestCode));
         return dialog;
     }
 
