@@ -17,7 +17,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 /**
- * Created by okubo on 2018/03/01.
+ * Created by okubo on 2018/03/05.
  * AlertDialogを利用するための ユーティリティクラス
  */
 
@@ -48,6 +48,7 @@ public class DialogUtils {
     public static final int EVENT_BUTTON_NEGATIVE = DialogInterface.BUTTON_NEGATIVE;
     public static final int EVENT_BUTTON_NEUTRAL = DialogInterface.BUTTON_NEUTRAL;
     public static final int EVENT_DIALOG_CREATED = -100;
+    public static final int EVENT_DIALOG_SHOWN = -101;
 
     private static final int ID_STRING_DEFAULT_OK = android.R.string.ok;
     private static final int ID_STRING_DEFAULT_CANCEL = android.R.string.cancel;
@@ -68,7 +69,7 @@ public class DialogUtils {
          * - 選択リスト(Single Choice)が指定されている場合、選択リストの ListViewオブジェクト
          * - カスタムViewが 設定されている場合、その Viewオブジェクト
          */
-        void onDialogEvent(int requestCode, AlertDialog dialog, int which, Object objResponse);
+        void onDialogEvent(int requestCode, AlertDialog dialog, int which, View view);
     }
 
 
@@ -153,7 +154,7 @@ public class DialogUtils {
      * @param requestCode Dialogの イベントリスナーに返されるリクエストコード
      * @return 生成されたDialogFragmentオブジェクト
      */
-    public static DialogFragment showItemsDialog(final Activity activity, String title, String[] list, int selected, String labelOk, String labelCancel, int requestCode) {
+    public static DialogFragment showItemSelectDialog(final Activity activity, String title, String[] list, int selected, String labelOk, String labelCancel, int requestCode) {
         DialogFragment dialog = BaseDialogFragment.newInstance(requestCode, title, list, selected, labelOk, labelCancel);
         dialog.show(activity.getFragmentManager(), TAG_PREFIX + Integer.toHexString(requestCode));
         return dialog;
@@ -169,7 +170,7 @@ public class DialogUtils {
      * @return 生成されたDialogFragmentオブジェクト
      */
     public static DialogFragment showItemListDialog(final Activity activity, String title, String[] list, String labelCancel, int requestCode) {
-        return showItemsDialog(activity, title, list, LIST_TYPE_NO_CHECKBOX, null, labelCancel, requestCode);
+        return showItemSelectDialog(activity, title, list, LIST_TYPE_NO_CHECKBOX, null, labelCancel, requestCode);
     }
 
     /**
@@ -203,7 +204,7 @@ public class DialogUtils {
         String title = getString(activity, titleId);
         String labelOk = getString(activity, okTextId);
         String labelCancel = getString(activity, cancelTextId);
-        return showItemsDialog(activity, title, list, selected, labelOk, labelCancel, requestCode);
+        return showItemSelectDialog(activity, title, list, selected, labelOk, labelCancel, requestCode);
     }
 
     /**
@@ -322,7 +323,7 @@ public class DialogUtils {
     // 基本DialogFragmentクラス
     //
 
-    public static class BaseDialogFragment extends DialogFragment implements DialogInterface.OnClickListener, DialogInterface.OnCancelListener {
+    public static class BaseDialogFragment extends DialogFragment implements DialogInterface.OnClickListener, DialogInterface.OnCancelListener, DialogInterface.OnShowListener {
         private final static int LAYOUT_ID_DEFAULT = -1;
         private final static float DIP_PADDING_PROGRESS = 15.0f;
 
@@ -477,11 +478,13 @@ public class DialogUtils {
             if (buttonOk != null) builder.setPositiveButton(buttonOk, this);
             if (buttonCancel != null) builder.setNegativeButton(buttonCancel, this);
             if (buttonNeutral != null) builder.setNeutralButton(buttonNeutral, this);
+            this.setCancelable(buttonCancel != null);        // キャンセルボタンがない場合は、Backキーによるキャンセルも無効
             mAlertDialog = builder.create();
 
             mAlertDialog.setCanceledOnTouchOutside(false);
             // Dialogが createされた事をListenerに通知する。(主にカスタムViewの初期化処理のため)
             callbackToListener(EVENT_DIALOG_CREATED);
+            mAlertDialog.setOnShowListener(this);
 
             return mAlertDialog;
         }
@@ -505,16 +508,21 @@ public class DialogUtils {
         private void callbackToListener(int which) {
             if (mListener == null) return;
 
-            Object objCallback = null;
+            View viewCallback = null;
             // Dialogの形態によって、callbackで返す オブジェクトを切り替える
             if (mCustomView != null) {
                 // カスタムlayoutが指定されている場合は、そのViewを返す
-                objCallback = mCustomView;
+                viewCallback = mCustomView;
 
             } else if (mChoiceList != null) {
-                objCallback = mAlertDialog.getListView();
+                viewCallback = mAlertDialog.getListView();
             }
-            mListener.onDialogEvent(mRequestCode, mAlertDialog, which, objCallback);
+            mListener.onDialogEvent(mRequestCode, mAlertDialog, which, viewCallback);
+        }
+
+        @Override
+        public void onShow(DialogInterface dialogInterface) {
+            callbackToListener(EVENT_DIALOG_SHOWN);
         }
 
         private View buildProgressDialog(Context context, String message) {
@@ -540,6 +548,7 @@ public class DialogUtils {
             return layout;
         }
     }
+
 
     //////////////////////////
     //

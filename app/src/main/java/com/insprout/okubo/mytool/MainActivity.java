@@ -122,36 +122,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onDialogEvent(int requestCode, AlertDialog dialog, int which, Object obj) {
+    public void onDialogEvent(int requestCode, AlertDialog dialog, int which, View view) {
         switch (requestCode) {
             case REQ_ADJUST_SCALE :
+                NumberPicker picker = view.findViewById(R.id.np_adjust);
                 switch (which) {
                     // カスタムDialog 作成イベント
                     case DialogUtils.EVENT_DIALOG_CREATED:
                         // 子Viewなどの初期化
-                        if (obj instanceof View) {
-                            // Pickerの選択肢を設定する
-                            NumberPicker picker = ((View)obj).findViewById(R.id.np_adjust);
-                            picker.setMaxValue(mSelectionLabels.length - 1);
-                            picker.setMinValue(0);
-                            picker.setDisplayedValues(mSelectionLabels);
-                            picker.setWrapSelectorWheel(false);
-                            // 現在の設定値を 選択しておく
-                            int index = mSelectionValues.indexOf(Settings.getAdjustRate(this));
-                            if (index >= 0) picker.setValue(index);
-                        }
+                        // Pickerの選択肢を設定する
+                        picker.setMaxValue(mSelectionLabels.length - 1);
+                        picker.setMinValue(0);
+                        picker.setDisplayedValues(mSelectionLabels);
+                        picker.setWrapSelectorWheel(false);
+                        // 現在の設定値を 選択しておく
+                        int index = mSelectionValues.indexOf(Settings.getAdjustRate(this));
+                        if (index >= 0) picker.setValue(index);
                         break;
 
                     // OKボタン押下
                     case DialogUtils.EVENT_BUTTON_POSITIVE:
-                        if (obj instanceof View) {
-                            NumberPicker picker = ((View)obj).findViewById(R.id.np_adjust);
-                            int rate = mSelectionValues.get(picker.getValue());
-                            Settings.putAdjustRate(MainActivity.this, rate);
-                            mAdjustRate = convertRate(rate);
-                            mRulerView.setAdjustRate(mAdjustRate);
-                            mRulerView.invalidate();
-                        }
+                        int rate = mSelectionValues.get(picker.getValue());
+                        Settings.putAdjustRate(MainActivity.this, rate);
+                        mAdjustRate = convertRate(rate);
+                        mRulerView.setAdjustRate(mAdjustRate);
+                        mRulerView.invalidate();
                         break;
                 }
                 break;

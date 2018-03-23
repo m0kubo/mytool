@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -261,7 +262,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
     // そうしないと、(メモリ枯渇などによる)Fragmentの再作成時に Listenerが参照されなくなる。
 
     @Override
-    public void onDialogEvent(int requestCode, AlertDialog dialog, int which, Object obj) {
+    public void onDialogEvent(int requestCode, AlertDialog dialog, int which, View view) {
         switch (requestCode) {
             case REQ_DLG_FONT_SIZE:
                 // which には ボタンID (DialogInterface.BUTTON_NEGATIVE : -2)などもくるので注意
@@ -273,7 +274,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 //                }
 //                if (dialog != null) dialog.dismiss();
                 if (which == DialogUtils.EVENT_BUTTON_POSITIVE) {
-                    int pos = ((ListView)obj).getCheckedItemPosition();
+                    int pos = ((ListView)view).getCheckedItemPosition();
                     mSpFontSize = mFontSizeArray[pos];
                     Settings.putFontSize(getApplicationContext(), mSpFontSize);
                     setFontSize(mSpFontSize);
@@ -292,7 +293,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 //                if (dialog != null) dialog.dismiss();
                 if (which == DialogUtils.EVENT_BUTTON_POSITIVE) {
                     // charSetが変更された
-                    int pos = ((ListView)obj).getCheckedItemPosition();
+                    int pos = ((ListView)view).getCheckedItemPosition();
                     mCharSet = mCharSetArray[pos];
                     if (mFileUri != null) {
                         viewFile(mFileUri, mCharSet);
