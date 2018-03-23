@@ -106,6 +106,19 @@ public class DialogUi {
     }
 
     /**
+     * OKボタンのみの メッセージダイアログを表示する
+     * @param activity 呼び出すActivity
+     * @param title ダイアログのタイトル文字列 (表示しない場合は nullを指定する)
+     * @param message メッセージ文字列 (表示しない場合は nullを指定する)
+     * @param labelOk OKボタンのラベル文字列 (ボタンを表示しない場合は nullを指定する)
+     * @param requestCode Dialogの イベントリスナーに返されるリクエストコード
+     * @return 生成されたDialogFragmentオブジェクト
+     */
+    public static DialogFragment showOkDialog(Activity activity, String title, String message, String labelOk, int requestCode) {
+        return showButtonsDialog(activity, title, message, labelOk, null, null, requestCode);
+    }
+
+    /**
      * OK/Cancelの ボタンを持つダイアログを表示する
      * @param activity 呼び出すActivity
      * @param titleId ダイアログのタイトルのリソースID (表示しない場合は 0を指定する)
@@ -120,6 +133,20 @@ public class DialogUi {
         String message = getString(activity, messageId);
         String labelOk = getString(activity, okTextId);
         String labelCancel = getString(activity, cancelTextId);
+        return showButtonsDialog(activity, title, message, labelOk, labelCancel, null, requestCode);
+    }
+
+    /**
+     * OK/Cancelの ボタンを持つダイアログを表示する
+     * @param activity 呼び出すActivity
+     * @param title ダイアログのタイトル文字列 (表示しない場合は nullを指定する)
+     * @param message メッセージ文字列 (表示しない場合は nullを指定する)
+     * @param labelOk OKボタンのラベル文字列 (ボタンを表示しない場合は nullを指定する)
+     * @param labelCancel Cancelボタンのラベル文字列 (ボタンを表示しない場合は nullを指定する)
+     * @param requestCode Dialogの イベントリスナーに返されるリクエストコード
+     * @return 生成されたDialogFragmentオブジェクト
+     */
+    public static DialogFragment showOkCancelDialog(Activity activity, String title, String message, String labelOk, String labelCancel, int requestCode) {
         return showButtonsDialog(activity, title, message, labelOk, labelCancel, null, requestCode);
     }
 
