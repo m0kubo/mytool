@@ -21,7 +21,7 @@ import android.widget.TextView;
  * AlertDialogを利用するための ユーティリティクラス
  */
 
-public class DialogUtils {
+public class DialogUi {
     /**
      * 引数受け渡し用のキー
      */

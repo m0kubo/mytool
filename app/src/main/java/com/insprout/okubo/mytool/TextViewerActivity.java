@@ -27,7 +27,7 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 
 
-public class TextViewerActivity extends AppCompatActivity implements DialogUtils.DialogEventListener {
+public class TextViewerActivity extends AppCompatActivity implements DialogUi.DialogEventListener {
     private final static int REQ_DLG_CHAR_SET = 101;
     private final static int REQ_DLG_FONT_SIZE = 102;
 
@@ -109,7 +109,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 
     private void viewFileDelayed(final Uri fileUri, final String charSet) {
         String msg = getString(R.string.toast_view_fmt, "");
-        final DialogFragment mProgress = DialogUtils.showProgressDialog(this, msg, mFileUri.toString());
+        final DialogFragment mProgress = DialogUi.showProgressDialog(this, msg, mFileUri.toString());
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -230,7 +230,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
         for (int i=0; i<mFontSizeArray.length; i++) {
             arrayLabels[i] = getFontSizeLabel(mFontSizeArray[i]);
         }
-        DialogUtils.showItemSelectDialog(
+        DialogUi.showItemSelectDialog(
                 this,
                 R.string.menu_font_size,
                 arrayLabels,
@@ -242,7 +242,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 
     private void changeCharSet() {
         int selected = Arrays.asList(mCharSetArray).indexOf(mCharSet);
-        DialogUtils.showItemSelectDialog(
+        DialogUi.showItemSelectDialog(
                 this,
                 R.string.menu_char_set,
                 mCharSetArray,
@@ -273,7 +273,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 //                    setFontSize(mSpFontSize);
 //                }
 //                if (dialog != null) dialog.dismiss();
-                if (which == DialogUtils.EVENT_BUTTON_POSITIVE) {
+                if (which == DialogUi.EVENT_BUTTON_POSITIVE) {
                     int pos = ((ListView)view).getCheckedItemPosition();
                     mSpFontSize = mFontSizeArray[pos];
                     Settings.putFontSize(getApplicationContext(), mSpFontSize);
@@ -291,7 +291,7 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUtils
 //                    }
 //                }
 //                if (dialog != null) dialog.dismiss();
-                if (which == DialogUtils.EVENT_BUTTON_POSITIVE) {
+                if (which == DialogUi.EVENT_BUTTON_POSITIVE) {
                     // charSetが変更された
                     int pos = ((ListView)view).getCheckedItemPosition();
                     mCharSet = mCharSetArray[pos];

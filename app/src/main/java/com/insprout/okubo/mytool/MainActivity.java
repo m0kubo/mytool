@@ -12,7 +12,7 @@ import android.widget.NumberPicker;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogUtils.DialogEventListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogUi.DialogEventListener {
 
     private final static int REQ_ADJUST_SCALE = 100;
 
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch(item.getItemId()) {
             case R.id.action_adjust_scale:
                 // スケール補正ダイアログを表示する
-                DialogUtils.showCustomDialog(
+                DialogUi.showCustomDialog(
                         this,
                         R.string.action_adjust_scale,
                         R.string.msg_adjust_scale,
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 NumberPicker picker = view.findViewById(R.id.np_adjust);
                 switch (which) {
                     // カスタムDialog 作成イベント
-                    case DialogUtils.EVENT_DIALOG_CREATED:
+                    case DialogUi.EVENT_DIALOG_CREATED:
                         // 子Viewなどの初期化
                         // Pickerの選択肢を設定する
                         picker.setMaxValue(mSelectionLabels.length - 1);
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         break;
 
                     // OKボタン押下
-                    case DialogUtils.EVENT_BUTTON_POSITIVE:
+                    case DialogUi.EVENT_BUTTON_POSITIVE:
                         int rate = mSelectionValues.get(picker.getValue());
                         Settings.putAdjustRate(MainActivity.this, rate);
                         mAdjustRate = convertRate(rate);
