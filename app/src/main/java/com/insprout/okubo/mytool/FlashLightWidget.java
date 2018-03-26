@@ -42,7 +42,6 @@ public class FlashLightWidget extends AppWidgetProvider {
 
         if (ACTION_CLICK.equals(intent.getAction())) {
             // FlashLight点灯/消灯
-//            boolean flashing = FlashLight.getInstance(context.getApplicationContext()).toggle();
             FlashLight flash = FlashLight.getInstance(context);
             boolean flashing = flash.toggle();
             // FlashLightの状態を ボタンに反映
