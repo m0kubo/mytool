@@ -1,5 +1,6 @@
 package com.insprout.okubo.mytool;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -10,10 +11,13 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,6 +58,11 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
 
         initVars();
         initView();
+
+        if (mMagneticSensor == null ||  mAccelerometerSensor== null) {
+            Toast.makeText(this, R.string.msg_missing_sensor, Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
 
@@ -73,6 +82,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void initView() {
         mTvHorizon = findViewById(R.id.tv_angle);
         mTvFace = findViewById(R.id.tv_face);
@@ -80,6 +90,23 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         mSurfaceView = findViewById(R.id.surfaceView);
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
+        mSurfaceView.setOnTouchListener(new View.OnTouchListener() {
+            boolean mFocusing = false;
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (mFocusing) return true;
+                if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP) {
+                    mFocusing = true;
+                    mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                        @Override
+                        public void onAutoFocus(boolean b, Camera camera) {
+                            mFocusing = false;
+                        }
+                    });
+                }
+                return true;
+            }
+        });
     }
 
 
@@ -216,6 +243,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         // パラメータを設定してカメラを再開
         mCamera.setParameters(parameters);
         mCamera.startPreview();
+        mCamera.autoFocus(null);
     }
 
     @Override
