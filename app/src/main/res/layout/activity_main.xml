@@ -30,5 +30,14 @@
         android:src="@mipmap/ic_description"
         android:background="@drawable/bg_circle"
         android:onClick="onClick"/>
+    <ImageButton
+        android:id="@+id/btn_angle"
+        android:layout_width="@dimen/size_circle_medium_button"
+        android:layout_height="@dimen/size_circle_medium_button"
+        android:layout_margin="@dimen/fab_margin"
+        android:layout_below="@+id/btn_viewer"
+        android:src="@mipmap/ic_measure_angle"
+        android:background="@drawable/bg_circle"
+        android:onClick="onClick"/>
 
 </RelativeLayout>

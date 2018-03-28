@@ -118,6 +118,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_viewer:
                 TextViewerActivity.startActivity(this);
                 break;
+
+            case R.id.btn_angle:
+                HorizonMeterActivity.startActivity(this);
+                break;
         }
     }
 

@@ -67,7 +67,7 @@ public class FlashLight {
     // Interface
     //
 
-    public interface IFlashLight {
+    private interface IFlashLight {
 
         public void release();
 
