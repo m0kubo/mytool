@@ -32,6 +32,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
     private SurfaceView mSurfaceView;
     private SurfaceHolder mSurfaceHolder;
     private Camera mCamera;
+    private boolean mFocusing = false;
 
 
     @Override
@@ -91,20 +92,25 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceView.setOnTouchListener(new View.OnTouchListener() {
-            boolean mFocusing = false;
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (mFocusing) return true;
                 if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP) {
-                    mFocusing = true;
-                    mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                        @Override
-                        public void onAutoFocus(boolean b, Camera camera) {
-                            mFocusing = false;
-                        }
-                    });
+                    autoFocus();
                 }
                 return true;
+            }
+        });
+    }
+
+    public void autoFocus() {
+        if (mCamera == null) return;
+
+        mFocusing = true;
+        mCamera.autoFocus(new Camera.AutoFocusCallback() {
+            @Override
+            public void onAutoFocus(boolean b, Camera camera) {
+                mFocusing = false;
             }
         });
     }
@@ -243,7 +249,8 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         // パラメータを設定してカメラを再開
         mCamera.setParameters(parameters);
         mCamera.startPreview();
-        mCamera.autoFocus(null);
+        //mCamera.autoFocus(null);
+        autoFocus();
     }
 
     @Override
