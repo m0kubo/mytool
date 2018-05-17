@@ -89,10 +89,12 @@ public class CameraUi implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        mCamera = Camera.open();
         try {
+            mCamera = Camera.open();
             mCamera.setPreviewDisplay(mSurfaceHolder);
-        } catch (IOException e) {
+
+        } catch (IOException | RuntimeException e) {
+            // RuntimeExceptionは カメラPermissionがない場合に発生
             e.printStackTrace();
         }
     }

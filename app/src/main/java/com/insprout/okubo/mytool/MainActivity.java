@@ -1,20 +1,31 @@
 package com.insprout.okubo.mytool;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.NumberPicker;
+import android.widget.Toast;
+
+import com.insprout.okubo.mytool.util.SdkUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogUi.DialogEventListener {
 
+    public final static String[] PERMISSIONS_CAMERA = {
+            Manifest.permission.CAMERA
+    };
+
     private final static int REQ_ADJUST_SCALE = 100;
+    private final static int REQUEST_PERMIT_CAMERA = 500;
 
     private final static int MAX_ADJUST_MILLI_VALUE = 50;
     private final static int STEP_ADJUST_MILLI_VALUE = 1;
@@ -120,9 +131,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btn_angle:
-                HorizonMeterActivity.startActivity(this);
+                startHorizonMeter();
                 break;
         }
+    }
+
+
+    private void startHorizonMeter() {
+        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // android 5.0以上は Camera2クラスを使用する
+                HorizonMeter2Activity.startActivity(this);
+
+            } else {
+                // android 4.4以前は Cameraクラスを使用する
+                HorizonMeterActivity.startActivity(this);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_PERMIT_CAMERA:
+                // PERMISSIONが すべて付与されたか確認する
+                if (SdkUtils.isGranted(grantResults)) {
+                    // カメラの権限が付与された
+                    startHorizonMeter();
+                }
+                return;
+
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override
