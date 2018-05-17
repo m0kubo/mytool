@@ -105,7 +105,6 @@ public class RulerView extends View {
         while(y <= maxY) {
             y = mm * mYDotsPer1Millimeter * mAdjustRate + minY;
 
-            scaleLabel = null;
             if (mod(mm, 10) == 0) {
                 // 10mmの目盛り
                 lineWidth = LINE_WIDTH_SCALE_10;

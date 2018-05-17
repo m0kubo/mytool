@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.NumberPicker;
-import android.widget.Toast;
 
 import com.insprout.okubo.mytool.util.SdkUtils;
 

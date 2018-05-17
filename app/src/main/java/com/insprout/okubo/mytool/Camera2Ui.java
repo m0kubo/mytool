@@ -99,7 +99,7 @@ public class Camera2Ui {
         if (manager != null) {
             try {
                 //カメラIDを取得（背面カメラを選択）
-                String backCameraId = null;
+                String backCameraId;
                 for (String cameraId : manager.getCameraIdList()) {
                     CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
                     Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
@@ -188,7 +188,7 @@ public class Camera2Ui {
             mCaptureSession = cameraCaptureSession;
 
 
-            CaptureRequest.Builder captureBuilder = null;
+            CaptureRequest.Builder captureBuilder;
             try {
                 captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 captureBuilder.addTarget(mPreviewSurface);

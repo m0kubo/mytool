@@ -451,10 +451,10 @@ public class DialogUi {
         }
 
         @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            if (activity instanceof DialogEventListener) {
-                mListener = (DialogEventListener) activity;
+        public void onAttach(Context context) {
+            super.onAttach(context);
+            if (context instanceof DialogEventListener) {
+                mListener = (DialogEventListener) context;
             }
         }
 
