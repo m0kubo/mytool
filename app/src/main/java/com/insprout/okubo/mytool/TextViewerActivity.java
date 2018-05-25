@@ -109,7 +109,10 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
 
     private void viewFileDelayed(final Uri fileUri, final String charSet) {
         String msg = getString(R.string.toast_view_fmt, "");
-        final DialogFragment mProgress = DialogUi.showProgressDialog(this, msg, mFileUri.toString());
+        final DialogFragment mProgress = new DialogUi.Builder(this, DialogUi.STYLE_PROGRESS_DIALOG)
+                .setTitle(msg)
+                .setMessage(mFileUri.toString())
+                .show();
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -230,26 +233,24 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
         for (int i=0; i<mFontSizeArray.length; i++) {
             arrayLabels[i] = getFontSizeLabel(mFontSizeArray[i]);
         }
-        DialogUi.showItemSelectDialog(
-                this,
-                R.string.menu_font_size,
-                arrayLabels,
-                selected,
-                android.R.string.ok,
-                android.R.string.cancel,
-                REQ_DLG_FONT_SIZE);
+        new DialogUi.Builder(this)
+                .setTitle(R.string.menu_font_size)
+                .setSingleChoiceItems(arrayLabels, selected)
+                .setPositiveButton()
+                .setNegativeButton()
+                .setRequestCode(REQ_DLG_FONT_SIZE)
+                .show();
     }
 
     private void changeCharSet() {
         int selected = Arrays.asList(mCharSetArray).indexOf(mCharSet);
-        DialogUi.showItemSelectDialog(
-                this,
-                R.string.menu_char_set,
-                mCharSetArray,
-                selected,
-                android.R.string.ok,
-                android.R.string.cancel,
-                REQ_DLG_CHAR_SET);
+        new DialogUi.Builder(this)
+                .setTitle(R.string.menu_char_set)
+                .setSingleChoiceItems(mCharSetArray, selected)
+                .setPositiveButton()
+                .setNegativeButton()
+                .setRequestCode(REQ_DLG_CHAR_SET)
+                .show();
     }
 
 

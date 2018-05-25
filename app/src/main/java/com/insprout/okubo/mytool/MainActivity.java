@@ -100,14 +100,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch(item.getItemId()) {
             case R.id.action_adjust_scale:
                 // スケール補正ダイアログを表示する
-                DialogUi.showCustomDialog(
-                        this,
-                        R.string.action_adjust_scale,
-                        R.string.msg_adjust_scale,
-                        R.layout.dlg_adjust_scale,
-                        android.R.string.ok,
-                        android.R.string.cancel,
-                        REQ_ADJUST_SCALE);
+                new DialogUi.Builder(this)
+                        .setTitle(R.string.action_adjust_scale)
+                        .setMessage(R.string.msg_adjust_scale)
+                        .setView(R.layout.dlg_adjust_scale)
+                        .setPositiveButton()
+                        .setNegativeButton()
+                        .setRequestCode(REQ_ADJUST_SCALE)
+                        .show();
                 return true;
         }
 
