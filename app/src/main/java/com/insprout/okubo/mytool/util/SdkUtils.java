@@ -9,9 +9,11 @@ import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
+import android.support.v4.content.FileProvider;
 import android.text.Html;
 import android.text.Spanned;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -154,6 +156,24 @@ public class SdkUtils {
         }
     }
 
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    // File系  (主にandroidのバージョンによる apiの違いを吸収するために用意)
+    //
+
+    public static Uri getUriForFile(Context context, File file) {
+        Uri uri;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            // API level 24以降ではこちらのメソッドを使用する
+            // 関連する設定を AndroidManifest.xmlなどに登録しておくこと
+            uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+        } else {
+            // 以前のバージョンと同じ Uriを返す
+            uri = Uri.fromFile(file);
+        }
+        return uri;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     //

@@ -138,14 +138,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startHorizonMeter() {
         if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                // android 5.0以上は Camera2クラスを使用する
-                HorizonMeter2Activity.startActivity(this);
-
-            } else {
-                // android 4.4以前は Cameraクラスを使用する
-                HorizonMeterActivity.startActivity(this);
-            }
+            HorizonMeterActivity.startActivity(this);
         }
     }
 

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.insprout.okubo.mytool">
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA"/>
     <!--<uses-feature android:name="android.hardware.autofocus"/>-->
     <!--<uses-feature android:name="android.hardware.camera"/>-->
@@ -43,11 +44,6 @@
         </activity>
         <activity
             android:name=".HorizonMeterActivity"
-            android:label="@string/title_horizon_meter"
-            android:screenOrientation="landscape">
-        </activity>
-        <activity
-            android:name=".HorizonMeter2Activity"
             android:label="@string/title_horizon_meter"
             android:screenOrientation="landscape">
         </activity>

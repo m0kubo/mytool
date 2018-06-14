@@ -22,7 +22,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
     private Sensor mAccelerometerSensor = null;     // 加速度センサー
     private TextView mTvHorizon, mTvFace;
 
-    private CameraUi mCameraUi;
+    private PreviewUi mCameraUi;
 
 
     @Override
@@ -31,6 +31,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         if (mSensorManager != null && mMagneticSensor != null &&  mAccelerometerSensor != null) {
             mSensorManager.unregisterListener(this);
         }
+        mCameraUi.close();
     }
 
     @Override
@@ -40,6 +41,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
             mSensorManager.registerListener(this, mMagneticSensor, SensorManager.SENSOR_DELAY_UI);
             mSensorManager.registerListener(this, mAccelerometerSensor, SensorManager.SENSOR_DELAY_UI);
         }
+        mCameraUi.open();
     }
 
     @Override
@@ -78,8 +80,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         mTvHorizon = findViewById(R.id.tv_angle);
         mTvFace = findViewById(R.id.tv_face);
 
-        SurfaceView surfaceView = findViewById(R.id.surfaceView);
-        mCameraUi = new CameraUi(this, surfaceView);
+        mCameraUi = new PreviewUi(this, findViewById(R.id.preview));
     }
 
 
@@ -103,7 +104,6 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
 //                break;
 //        }
 //    }
-
 
 
     public static void startActivity(Context context) {
@@ -158,6 +158,5 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
     }
-
 
 }

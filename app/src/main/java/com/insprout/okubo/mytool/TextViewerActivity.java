@@ -1,20 +1,25 @@
 package com.insprout.okubo.mytool;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.insprout.okubo.mytool.util.SdkUtils;
 
 import org.mozilla.universalchardet.UniversalDetector;
 
@@ -51,6 +56,10 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
             18.0f,
             22.0f
     };
+    private final static String[] PERMISSIONS_READ_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+    };
+    private final int REQUEST_PERMISSION_ACCESS_STORAGE = 100;
 
 
     @Override
@@ -89,6 +98,9 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
 
 
     private void viewFile() {
+        // Runtimeパーミッションの確認
+        if (!SdkUtils.requestRuntimePermissions(this, PERMISSIONS_READ_STORAGE, REQUEST_PERMISSION_ACCESS_STORAGE)) return;
+
         if (mFileUri != null) {
             // 暗黙的Intentでファイルが指定された
             viewFileDelayed(mFileUri, mCharSet);
@@ -254,6 +266,25 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
     }
 
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch(requestCode) {
+            case REQUEST_PERMISSION_ACCESS_STORAGE:
+                // PERMISSIONが すべて付与されたか確認する
+                if (!SdkUtils.isGranted(grantResults)) {
+                    // 必要な PERMISSIONは付与されなかった
+                    finish();
+                    return;
+                }
+
+                viewFile();
+                break;
+        }
+    }
+
+
     /////////////////////////////////////////////////////////////////////////
     //
     // Dialog 関連
@@ -295,6 +326,8 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
                 if (which == DialogUi.EVENT_BUTTON_POSITIVE) {
                     // charSetが変更された
                     int pos = ((ListView)view).getCheckedItemPosition();
+                    String charSet = ((ListView)view).getItemAtPosition(pos).toString();
+                    Log.d("dialog", "item: " + charSet);
                     mCharSet = mCharSetArray[pos];
                     if (mFileUri != null) {
                         viewFile(mFileUri, mCharSet);
@@ -318,27 +351,21 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        for (int i=0; i<menu.size(); i++) {
-            MenuItem menuItem = menu.getItem(i);
-            int menuId = menuItem.getItemId();
-            String label;
-            switch (menuId) {
-                case R.id.action_char_set:
-                    label = getString(R.string.menu_char_set);
-                    if (mCharSet != null) {
-                        label += mCharSet;
-                        menuItem.setEnabled(true);
-                    } else {
-                        menuItem.setEnabled(false);
-                    }
-                    menuItem.setTitle(label);
-                    break;
+        MenuItem menuItem;
 
-                case R.id.action_font_size:
-                    label = getString(R.string.menu_font_size) + getFontSizeLabel(mSpFontSize);
-                    menuItem.setTitle(label);
-                    break;
+        if ((menuItem = menu.findItem(R.id.action_char_set)) != null) {
+            String label = getString(R.string.menu_char_set);
+            if (mCharSet != null) {
+                label += mCharSet;
+                menuItem.setEnabled(true);
+            } else {
+                menuItem.setEnabled(false);
             }
+            menuItem.setTitle(label);
+        }
+
+        if ((menuItem = menu.findItem(R.id.action_font_size)) != null) {
+            menuItem.setTitle(getString(R.string.menu_font_size) + getFontSizeLabel(mSpFontSize));
         }
 
         return super.onPrepareOptionsMenu(menu);
