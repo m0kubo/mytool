@@ -13,11 +13,11 @@ import android.view.ViewGroup;
 import java.io.IOException;
 import java.util.List;
 
+
 public class CameraUi implements SurfaceHolder.Callback {
 
     private Context mContext;
     private SurfaceView mSurfaceView;
-    private SurfaceHolder mSurfaceHolder;
     private Camera mCamera;
     private boolean mFocusing = false;
 
@@ -26,8 +26,6 @@ public class CameraUi implements SurfaceHolder.Callback {
     public CameraUi(Context context, SurfaceView surfaceView) {
         mContext = context;
         mSurfaceView = surfaceView;
-        mSurfaceHolder = mSurfaceView.getHolder();
-        mSurfaceHolder.addCallback(this);
         mSurfaceView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -38,6 +36,10 @@ public class CameraUi implements SurfaceHolder.Callback {
                 return true;
             }
         });
+    }
+
+    public void open() {
+        mSurfaceView.getHolder().addCallback(this);
     }
 
     public void close() {
@@ -91,7 +93,7 @@ public class CameraUi implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         try {
             mCamera = Camera.open();
-            mCamera.setPreviewDisplay(mSurfaceHolder);
+            mCamera.setPreviewDisplay(surfaceHolder);
 
         } catch (IOException | RuntimeException e) {
             // RuntimeExceptionは カメラPermissionがない場合に発生
@@ -144,6 +146,7 @@ public class CameraUi implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        // 想定外の挙動でSurfaceが破棄された場合にそなえて、念のためrelease処理を呼んでおく
         close();
     }
 

@@ -20,10 +20,12 @@ public class PreviewUi {
     }
 
     public void open() {
+        if (mCameraUi != null) mCameraUi.open();
         if (mCamera2Ui != null) mCamera2Ui.open();
     }
 
     public void close() {
+        if (mCameraUi != null) mCameraUi.close();
         if (mCamera2Ui != null) mCamera2Ui.close();
     }
 }
