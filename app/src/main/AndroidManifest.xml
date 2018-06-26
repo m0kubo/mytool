@@ -3,6 +3,7 @@
           package="com.insprout.okubo.mytool">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA"/>
     <!--<uses-feature android:name="android.hardware.autofocus"/>-->
     <!--<uses-feature android:name="android.hardware.camera"/>-->
@@ -46,6 +47,10 @@
             android:name=".HorizonMeterActivity"
             android:label="@string/title_horizon_meter"
             android:screenOrientation="landscape">
+        </activity>
+        <activity
+            android:name=".PhotoActivity"
+            android:label="@string/title_photo">
         </activity>
 
         <receiver

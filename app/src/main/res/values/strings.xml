@@ -11,6 +11,9 @@
     <string name="msg_adjust_scale">定規の目盛りは、端末に設定されているpixelの大きさを基準にしていますが、端末により誤差がある場合があります。</string>
     <string name="fmt_adjust_scale">%+.1f %%</string>
 
+
+    <string name="title_photo">カメラ サンプル</string>
+
     <string name="add_widget">Add widget</string>
 
     <string name="btn_close">閉じる</string>

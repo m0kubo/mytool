@@ -138,7 +138,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startHorizonMeter() {
         if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
-            HorizonMeterActivity.startActivity(this);
+//            HorizonMeterActivity.startActivity(this);
+            PhotoActivity.startActivity(this);
         }
     }
 

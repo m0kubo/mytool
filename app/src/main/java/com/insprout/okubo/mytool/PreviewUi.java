@@ -5,6 +5,8 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import java.io.File;
+
 public class PreviewUi {
     private CameraUi mCameraUi = null;
     private Camera2Ui mCamera2Ui = null;
@@ -27,5 +29,11 @@ public class PreviewUi {
     public void close() {
         if (mCameraUi != null) mCameraUi.close();
         if (mCamera2Ui != null) mCamera2Ui.close();
+    }
+
+    public void takePicture(File filePicture) {
+        if (filePicture == null) return;
+
+        if (mCameraUi != null) mCameraUi.takePicture(filePicture);
     }
 }
