@@ -2,7 +2,10 @@ package com.insprout.okubo.mytool;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.hardware.Camera;
+import android.media.ExifInterface;
+import android.media.MediaScannerConnection;
 import android.os.Handler;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -20,6 +23,7 @@ import java.util.List;
 
 public class CameraUi implements SurfaceHolder.Callback {
 
+    private Context mContext;
     private Display mDisplay;
     private SurfaceView mSurfaceView;
     private Camera mCamera;
@@ -28,6 +32,7 @@ public class CameraUi implements SurfaceHolder.Callback {
 
     @SuppressLint("ClickableViewAccessibility")
     public CameraUi(Activity activity, SurfaceView surfaceView) {
+        mContext = activity;
         mDisplay = activity.getWindowManager().getDefaultDisplay();
 
         mSurfaceView = surfaceView;
@@ -48,6 +53,11 @@ public class CameraUi implements SurfaceHolder.Callback {
     }
 
     public void close() {
+        closeCamera();
+        mSurfaceView.getHolder().removeCallback(this);
+    }
+
+    private void closeCamera() {
         if (mCamera != null) {
             mCamera.stopPreview();
             mCamera.release();
@@ -114,7 +124,7 @@ public class CameraUi implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         // 想定外の挙動でSurfaceが破棄された場合にそなえて、念のためrelease処理を呼んでおく
-        close();
+        closeCamera();
     }
 
 
@@ -127,38 +137,11 @@ public class CameraUi implements SurfaceHolder.Callback {
 
         Camera.Size size = selectFitSize(sizes, wideRatio(targetWidth, targetHeight));
         if (size != null) {
+            setupCameraRotation(camera);
             parameters.setPreviewSize(size.width, size.height);
-//            float previewRatio;
-//            switch (mDisplay.getRotation()) {
-//                // 反時計回りに 90度 (横)
-//                case Surface.ROTATION_90:
-//                    camera.setDisplayOrientation(0);
-//                    previewRatio = (float) size.width / (float) size.height;
-//                    break;
-//
-//                // 時計回りに 90度 (横)
-//                case Surface.ROTATION_270:
-//                    camera.setDisplayOrientation(180);
-//                    previewRatio = (float) size.width / (float) size.height;
-//                    break;
-//
-//                // 180度 (上下逆さま)
-//                case Surface.ROTATION_180:
-//                    camera.setDisplayOrientation(270);
-//                    previewRatio = (float) size.height / (float) size.width;
-//                    break;
-//
-//                // 正位置 (縦)
-//                case Surface.ROTATION_0:
-//                default:
-//                    camera.setDisplayOrientation(90);
-//                    previewRatio = (float) size.height / (float) size.width;
-//                    break;
-//            }
-            boolean landscape = setupCameraRotation(camera);
-            float previewRatio = landscape ? (float)size.width / (float)size.height : (float)size.height / (float)size.width;
 
             // 画像が歪まない様に、SurfaceViewのサイズを プレビュー画像の縦横比にあわせてリサイズする
+            float previewRatio = (float) size.width / (float) size.height;
             if ((float) mSurfaceView.getWidth() / (float) mSurfaceView.getHeight() > previewRatio) {
                 // 表示エリアより プレビュー画像の方が 幅が短い
                 mSurfaceView.getLayoutParams().width = Math.round(mSurfaceView.getHeight() * previewRatio);
@@ -179,46 +162,44 @@ public class CameraUi implements SurfaceHolder.Callback {
         Camera.Size size =  selectPictureSize(parameters.getSupportedPictureSizes(), targetWidth, targetHeight);
 
         if (size != null) {
-//            switch (mDisplay.getRotation()) {
-//                // 反時計回りに 90度 (横)
-//                case Surface.ROTATION_90:
-//                    camera.setDisplayOrientation(0);
-//                    break;
-//
-//                // 時計回りに 90度 (横)
-//                case Surface.ROTATION_270:
-//                    camera.setDisplayOrientation(180);
-//                    break;
-//
-//                // 180度 (上下逆さま)
-//                case Surface.ROTATION_180:
-//                    camera.setDisplayOrientation(270);
-//                    break;
-//
-//                // 正位置 (縦)
-//                case Surface.ROTATION_0:
-//                default:
-//                    camera.setDisplayOrientation(90);
-//                    break;
-//            }
-
             setupCameraRotation(camera);
             parameters.setPictureSize(size.width, size.height);
+
             mCamera.takePicture(
                     null,
                     null,
                     new Camera.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
-                            try {
-                                FileOutputStream out = new FileOutputStream(picture);
-                                out.write(data);
-                                out.close();
-                            } catch (IOException ignored) {
-                            } finally {
-                                //プレビュー再開
-                                camera.startPreview();
-                            }
+//                            FileOutputStream out = null;
+//                            try {
+//                                out = new FileOutputStream(picture);
+//                                out.write(data);
+//                            } catch (IOException ignored) {
+//                            } finally {
+//                                try {
+//                                    if (out != null) out.close();
+//                                } catch (IOException ignored) {
+//                                }
+//                            }
+//                            // 画像の回転情報をつけておく
+//                            try {
+//                                ExifInterface exif = new ExifInterface(picture.getPath());
+//                                exif.setAttribute(ExifInterface.TAG_ORIENTATION, getExifOrientation().toString());
+//                                exif.saveAttributes();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//
+//                            MediaScannerConnection.scanFile(
+//                                    mContext,
+//                                    new String[] { picture.getAbsolutePath() },
+//                                    null,
+//                                    null);
+                            savePhoto(picture, data, getExifOrientation());
+
+                            //プレビュー再開
+                            camera.startPreview();
                         }
 
                     }
@@ -227,31 +208,86 @@ public class CameraUi implements SurfaceHolder.Callback {
         }
     }
 
-    // 返り値: true: landscape, false: portrait
-    private boolean setupCameraRotation(Camera camera) {
+    private void savePhoto(File picture, byte[] data, int exifOrientation) {
+        if (picture == null || data == null) return;
+
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(picture);
+            out.write(data);
+        } catch (IOException ignored) {
+        } finally {
+            try {
+                if (out != null) out.close();
+            } catch (IOException ignored) {
+            }
+        }
+        // 画像の回転情報をつけておく
+        try {
+            ExifInterface exif = new ExifInterface(picture.getPath());
+            exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(exifOrientation));
+            exif.saveAttributes();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        MediaScannerConnection.scanFile(
+                mContext,
+                new String[] { picture.getAbsolutePath() },
+                null,
+                null);
+    }
+
+    private int getExifOrientation() {
+        switch (mDisplay.getRotation()) {
+            // 反時計回りに 90度 (横)
+            case Surface.ROTATION_90:
+                //camera.setDisplayOrientation(0);
+                return ExifInterface.ORIENTATION_NORMAL;
+
+            // 時計回りに 90度 (横)
+            case Surface.ROTATION_270:
+                //camera.setDisplayOrientation(180);
+                return ExifInterface.ORIENTATION_ROTATE_180;
+
+            // 180度 (上下逆さま)
+            case Surface.ROTATION_180:
+                //camera.setDisplayOrientation(270);
+                return ExifInterface.ORIENTATION_ROTATE_270;
+
+            // 正位置 (縦)
+            case Surface.ROTATION_0:
+            default:
+                //camera.setDisplayOrientation(90);
+                return ExifInterface.ORIENTATION_ROTATE_90;
+        }
+    }
+
+    private void setupCameraRotation(Camera camera) {
         switch (mDisplay.getRotation()) {
             // 反時計回りに 90度 (横)
             case Surface.ROTATION_90:
                 camera.setDisplayOrientation(0);
-                return true;
+                break;
 
             // 時計回りに 90度 (横)
             case Surface.ROTATION_270:
                 camera.setDisplayOrientation(180);
-                return true;
+                break;
 
             // 180度 (上下逆さま)
             case Surface.ROTATION_180:
                 camera.setDisplayOrientation(270);
-                return false;
+                break;
 
             // 正位置 (縦)
             case Surface.ROTATION_0:
             default:
                 camera.setDisplayOrientation(90);
-                return false;
+                break;
         }
     }
+
 
     private Camera.Size selectFitSize(List<Camera.Size> sizes, float maxWideRate) {
         Camera.Size size = selectWideSize(sizes, maxWideRate);
@@ -265,19 +301,19 @@ public class CameraUi implements SurfaceHolder.Callback {
 
         Camera.Size candidate = null;
         float candidateRatio = 0f;
-//        float candidateWidth = 0f;
+        float candidateWidth = 0f;
         for (Camera.Size size : sizes) {
             float ratio = wideRatio(size);
-            if (ratio >= candidateRatio && ratio <= maxWideRate) {
+            if (ratio >= candidateRatio && ratio <= maxWideRate && size.width > candidateWidth) {
                 candidateRatio = ratio;
-//                candidateWidth = size.width;
+                candidateWidth = size.width;
                 candidate = size;
             }
         }
         return candidate;
     }
 
-    // 最も 正方形に近いサイズを選らぶ
+    // 最も 正方形に近いサイズを選ぶ
     private Camera.Size selectSquareSize(List<Camera.Size> sizes) {
         if (sizes == null || sizes.isEmpty()) return null;
 

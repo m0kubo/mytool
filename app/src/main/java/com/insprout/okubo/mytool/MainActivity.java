@@ -22,6 +22,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public final static String[] PERMISSIONS_CAMERA = {
             Manifest.permission.CAMERA
     };
+    public final static String[] PERMISSIONS_PHOTO = {
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
 
     private final static int REQ_ADJUST_SCALE = 100;
     private final static int REQUEST_PERMIT_CAMERA = 500;
@@ -137,8 +141,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     private void startHorizonMeter() {
-        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
+//        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
 //            HorizonMeterActivity.startActivity(this);
+//        }
+        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_PHOTO, REQUEST_PERMIT_CAMERA)) {
             PhotoActivity.startActivity(this);
         }
     }

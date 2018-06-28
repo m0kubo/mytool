@@ -13,17 +13,29 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.MediaScannerConnection;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.util.Size;
 import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -34,11 +46,13 @@ public class Camera2Ui {
     private Display mDisplay;
     private TextureView mTextureView;
     private Surface mPreviewSurface;
-    private int mCameraOrientation = 0;
+    private Integer mCameraOrientation = 0;
     private Size mPreviewSize = null;
 
-    private CameraDevice mCameraDevice;
-    private CameraCaptureSession mCaptureSession;
+    private CameraDevice mCameraDevice = null;
+    private CameraCaptureSession mCaptureSession = null;
+    private ImageReader mImageReader = null;
+    private File mFile = null;
 
 
     public Camera2Ui(@NonNull Activity activity, @NonNull TextureView textureView) {
@@ -64,7 +78,30 @@ public class Camera2Ui {
 
                     // 目的に合う previewサイズを選択/設定する
                     mPreviewSize = getFitPreviewSize(getSupportedPreviewSizes(cameraId), width, height);
-                    if (mPreviewSize != null) transformView(mTextureView, mPreviewSize);
+                    if (mPreviewSize != null) {
+                        // 画像のサイズが確定した
+                        transformView(mTextureView, mPreviewSize);      // 表示領域にサイズ反映
+                        // 確定したサイズを元に 撮影用のImageReader作成
+                        mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
+                        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                            @Override
+                            public void onImageAvailable(ImageReader imageReader) {
+                                // 画像撮影成功
+                                Log.d("Camera", "onImageAvailable()");
+                                Image image = imageReader.acquireNextImage();
+                                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                                final byte[] imageBytes = new byte[ buffer.remaining() ];
+                                buffer.get(imageBytes);
+                                image.close();
+
+                                savePhoto(mFile, imageBytes);
+
+                            }
+                        }, null);
+
+                    } else {
+                        mImageReader = null;
+                    }
                 }
 
                 @Override
@@ -83,14 +120,133 @@ public class Camera2Ui {
         }
     }
 
+
+    private void savePhoto(File picture, byte[] data) {
+        if (picture == null || data == null) return;
+
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(picture);
+            out.write(data);
+        } catch (IOException ignored) {
+            ignored.printStackTrace();
+
+        } finally {
+            try {
+                if (out != null) out.close();
+            } catch (IOException ignored) {
+            }
+        }
+
+        MediaScannerConnection.scanFile(
+                mContext,
+                new String[] { picture.getAbsolutePath() },
+                null,
+                null);
+
+        Toast.makeText(mContext, "撮影完了: " + picture.getPath(), Toast.LENGTH_SHORT).show();
+    }
+
+
+
     public void close() {
+        closeSession();
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+    }
+
+    private void closeSession() {
         if (mCaptureSession != null) {
             mCaptureSession.close();
             mCaptureSession = null;
         }
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-            mCameraDevice = null;
+    }
+
+
+    public void takePicture(final File picture) {
+        mFile = picture;
+        if (picture == null) return;
+
+        if (mImageReader != null && mCameraDevice != null) {
+            createPhotoSession();
+        }
+    }
+
+
+    private void createPhotoSession() {
+        try {
+            closeSession();
+
+            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureBuilder.addTarget(mImageReader.getSurface());
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, adjustDegree());
+
+//            List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), new Surface(mTextureView.getSurfaceTexture()));
+            List<Surface> outputSurfaces = Collections.singletonList(mImageReader.getSurface());
+            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    try {
+                        mCaptureSession = session;
+                        session.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
+                            @Override
+                            public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                                super.onCaptureCompleted(session, request, result);
+                                // もう一度カメラのプレビュー表示を開始する.
+                                createPreviewSession();
+                            }
+                        }, null);
+                    } catch (CameraAccessException e) {
+                        close();
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                    mCaptureSession = null;
+                }
+            }, null);
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void createPreviewSession() {
+        try {
+            closeSession();
+
+            final CaptureRequest.Builder captureBuilder;
+            captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            captureBuilder.addTarget(mPreviewSurface);
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
+            mPreviewSurface = new Surface(mTextureView.getSurfaceTexture());
+            //List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), mPreviewSurface);
+            List<Surface> outputSurfaces = Collections.singletonList(mPreviewSurface);
+            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    try {
+                        mCaptureSession = session;
+                        session.setRepeatingRequest(captureBuilder.build(), null, null);
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                    mCaptureSession = null;
+                }
+            }, null);
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 
@@ -109,22 +265,8 @@ public class Camera2Ui {
                         manager.openCamera(backCameraId, mStateCallback, null);
 
                         // カメラの搭載向き、画面の縦横から 画像の補正角度を求めておく
-                        Integer orientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                        if (orientation == null) orientation = 0;
-                        switch(mDisplay.getRotation()) {
-                            case Surface.ROTATION_0:
-                                mCameraOrientation = (orientation + 270) % 360;
-                                break;
-                            case Surface.ROTATION_90:
-                                mCameraOrientation = orientation;
-                                break;
-                            case Surface.ROTATION_180:
-                                mCameraOrientation = (orientation + 90) % 360;
-                                break;
-                            case Surface.ROTATION_270:
-                                mCameraOrientation = (orientation + 180) % 360;
-                                break;
-                        }
+                        mCameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+
                         return cameraId;
                     }
                 }
@@ -148,31 +290,29 @@ public class Camera2Ui {
         public void onOpened(@NonNull CameraDevice camera) {
 
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
-            if (mPreviewSize != null) texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            if (mPreviewSize != null) {
+                texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            }
             mPreviewSurface = new Surface(texture);
-
             mCameraDevice = camera;
 
-            try {
-                camera.createCaptureSession(
-//                        Arrays.asList(mPreviewSurface, mImageReader.getSurface()),
-                        Arrays.asList(mPreviewSurface),
-                        mSessionCallback,
-                        null);
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-
+//            try {
+//                List<Surface> surfaces = (mImageReader != null) ? Arrays.asList(mImageReader.getSurface(), mPreviewSurface) : Collections.singletonList(mPreviewSurface);
+//                camera.createCaptureSession(surfaces, mSessionCallback, null);
+//            } catch (CameraAccessException e) {
+//                e.printStackTrace();
+//            }
+            createPreviewSession();
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-
+            close();
         }
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int i) {
-
+            close();
         }
     };
 
@@ -182,29 +322,32 @@ public class Camera2Ui {
     // CameraCaptureSession.StateCallback 実装
     //
 
-    private final CameraCaptureSession.StateCallback mSessionCallback = new CameraCaptureSession.StateCallback() {
-        @Override
-        public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-            mCaptureSession = cameraCaptureSession;
+//    private final CameraCaptureSession.StateCallback mSessionCallback = new CameraCaptureSession.StateCallback() {
+//        @Override
+//        public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+//            mCaptureSession = cameraCaptureSession;
+//            setRepeating(mCameraDevice, cameraCaptureSession);
+//
+//        }
+//
+//        @Override
+//        public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+//        }
+//    };
 
-
-            CaptureRequest.Builder captureBuilder;
-            try {
-                captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                captureBuilder.addTarget(mPreviewSurface);
-                captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                cameraCaptureSession.setRepeatingRequest(captureBuilder.build(), null, null);
-
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-        @Override
-        public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-        }
-    };
+//    private void setRepeating(CameraDevice cameraDevice, CameraCaptureSession cameraCaptureSession) {
+//        if (cameraDevice == null || cameraCaptureSession == null) return;
+//        try {
+//            CaptureRequest.Builder captureBuilder;
+//            captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//            captureBuilder.addTarget(mPreviewSurface);
+//            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//            cameraCaptureSession.setRepeatingRequest(captureBuilder.build(), null, null);
+//
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 
     //////////////////////////////////////////////////////////////////////
@@ -213,22 +356,20 @@ public class Camera2Ui {
     //
 
     private List<Size> getSupportedPreviewSizes(String cameraId) {
-        List<Size> previewSizes = new ArrayList<>();
-
         CameraManager cameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
         if (cameraManager != null) {
             try {
-                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-                StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                StreamConfigurationMap map = cameraManager.getCameraCharacteristics(cameraId)
+                        .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if (map != null) {
-                    previewSizes = Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
+//                    return Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
+                    return Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
                 }
 
-            } catch (CameraAccessException e) {
-                return previewSizes;
+            } catch (CameraAccessException ignored) {
             }
         }
-        return previewSizes;
+        return new ArrayList<>();
     }
 
 
@@ -257,8 +398,7 @@ public class Camera2Ui {
     }
 
     private boolean isFitRatio(float viewRatio, float ratio, float ratioCandidate) {
-        if (ratioCandidate <= 0) return true;
-        return wideRatio(ratio, viewRatio) <= wideRatio(ratio, ratioCandidate);
+        return ratioCandidate <= 0 || wideRatio(ratio, viewRatio) <= wideRatio(ratio, ratioCandidate);
     }
 
     private float wideRatio(float width, float height) {
@@ -282,14 +422,15 @@ public class Camera2Ui {
 
         float scale;
         float degree;
-        switch (mCameraOrientation) {
+        int cameraOrientation = adjustOrientation(mCameraOrientation);
+        switch (cameraOrientation) {
             case 90:
             case 270:
                 scale = Math.min(
                         (float) textureView.getWidth() / previewWidth,
                         (float) textureView.getHeight() / previewHeight
                 );
-                degree = mCameraOrientation - 180;
+                degree = cameraOrientation - 180;
                 break;
 
             case 0:
@@ -298,7 +439,7 @@ public class Camera2Ui {
                         (float) textureView.getWidth() / previewHeight,
                         (float) textureView.getHeight() / previewWidth
                 );
-                degree = mCameraOrientation;
+                degree = cameraOrientation;
                 break;
 
             default:
@@ -313,5 +454,33 @@ public class Camera2Ui {
 
         textureView.setTransform(matrix);
     }
+
+    private int adjustOrientation(Integer cameraOrientation) {
+        int orientation = (cameraOrientation != null) ? cameraOrientation : 0;
+        return ((orientation - adjustDegree()) + 360) % 360;
+    }
+
+    private int adjustDegree() {
+        switch (mDisplay.getRotation()) {
+            // 反時計回りに 90度 (横)
+            case Surface.ROTATION_90:
+                return 0;
+
+            // 時計回りに 90度 (横)
+            case Surface.ROTATION_270:
+                return 180;
+
+            // 180度 (上下逆さま)
+            case Surface.ROTATION_180:
+                return 270;
+
+            // 正位置 (縦)
+            case Surface.ROTATION_0:
+            default:
+                return 90;
+        }
+    }
+
+    /////////////////////////////////////
 
 }

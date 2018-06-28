@@ -9,13 +9,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 
 public class PhotoActivity extends AppCompatActivity {
 
     private PreviewUi mCameraUi;
     private File mFolder;
-    private File mPicture;
 
 
     @Override
@@ -43,7 +46,6 @@ public class PhotoActivity extends AppCompatActivity {
 
     private void initVars() {
         mFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        mPicture = new File(mFolder, "sample.jpeg");
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -55,9 +57,16 @@ public class PhotoActivity extends AppCompatActivity {
     public void onClick(View view) {
         switch(view.getId()) {
             case R.id.btn_photo:
-                mCameraUi.takePicture(mPicture);
+                takePhoto();
                 break;
         }
+    }
+
+    private void takePhoto() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.ENGLISH);
+        String fileName = "IMG_"+ dateFormat.format(new Date(System.currentTimeMillis())) + ".jpeg";
+        File filePhoto = new File(mFolder, fileName);
+        mCameraUi.takePicture(filePhoto);
     }
 
 

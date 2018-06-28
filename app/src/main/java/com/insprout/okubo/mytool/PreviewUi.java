@@ -35,5 +35,6 @@ public class PreviewUi {
         if (filePicture == null) return;
 
         if (mCameraUi != null) mCameraUi.takePicture(filePicture);
+        if (mCamera2Ui != null) mCamera2Ui.takePicture(filePicture);
     }
 }
