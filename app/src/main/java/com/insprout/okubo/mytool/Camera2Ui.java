@@ -19,7 +19,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaScannerConnection;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -27,15 +26,13 @@ import android.util.Size;
 import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
-import android.widget.Toast;
+
+import com.insprout.okubo.mytool.util.CameraUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -45,7 +42,6 @@ public class Camera2Ui {
     private Context mContext;
     private Display mDisplay;
     private TextureView mTextureView;
-    private Surface mPreviewSurface;
     private Integer mCameraOrientation = 0;
     private Size mPreviewSize = null;
 
@@ -82,7 +78,7 @@ public class Camera2Ui {
                         // 画像のサイズが確定した
                         transformView(mTextureView, mPreviewSize);      // 表示領域にサイズ反映
                         // 確定したサイズを元に 撮影用のImageReader作成
-                        mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
+                        mImageReader = ImageReader.newInstance(mPreviewSize.getHeight(), mPreviewSize.getWidth(), ImageFormat.JPEG, 1);
                         mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                             @Override
                             public void onImageAvailable(ImageReader imageReader) {
@@ -94,7 +90,7 @@ public class Camera2Ui {
                                 buffer.get(imageBytes);
                                 image.close();
 
-                                savePhoto(mFile, imageBytes);
+                                CameraUtils.savePhoto(mContext, mFile, imageBytes, -1);
 
                             }
                         }, null);
@@ -110,7 +106,7 @@ public class Camera2Ui {
 
                 @Override
                 public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
+                    return true;
                 }
 
                 @Override
@@ -121,39 +117,15 @@ public class Camera2Ui {
     }
 
 
-    private void savePhoto(File picture, byte[] data) {
-        if (picture == null || data == null) return;
-
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(picture);
-            out.write(data);
-        } catch (IOException ignored) {
-            ignored.printStackTrace();
-
-        } finally {
-            try {
-                if (out != null) out.close();
-            } catch (IOException ignored) {
-            }
-        }
-
-        MediaScannerConnection.scanFile(
-                mContext,
-                new String[] { picture.getAbsolutePath() },
-                null,
-                null);
-
-        Toast.makeText(mContext, "撮影完了: " + picture.getPath(), Toast.LENGTH_SHORT).show();
-    }
-
-
-
     public void close() {
         closeSession();
         if (mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
+        }
+        if (mImageReader != null) {
+            mImageReader.close();
+            mImageReader = null;
         }
     }
 
@@ -170,43 +142,41 @@ public class Camera2Ui {
         if (picture == null) return;
 
         if (mImageReader != null && mCameraDevice != null) {
-            createPhotoSession();
+            //createPhotoSession();
+            takePicture();
         }
     }
 
-
-    private void createPhotoSession() {
+    private void takePicture() {
         try {
-            closeSession();
-
-            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            final CaptureRequest.Builder captureBuilder =
+                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader.getSurface());
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, adjustDegree());
-
-//            List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), new Surface(mTextureView.getSurfaceTexture()));
-            List<Surface> outputSurfaces = Collections.singletonList(mImageReader.getSurface());
-            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraUtils.getRotationDegree(mDisplay.getRotation()));
+            mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
-                    try {
-                        mCaptureSession = session;
-                        session.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
-                            @Override
-                            public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                                super.onCaptureCompleted(session, request, result);
-                                // もう一度カメラのプレビュー表示を開始する.
-                                createPreviewSession();
-                            }
-                        }, null);
-                    } catch (CameraAccessException e) {
-                        close();
-                    }
+                public void onImageAvailable(ImageReader imageReader) {
+                    // 画像撮影成功
+                    Log.d("Camera", "onImageAvailable()");
+                    Image image = imageReader.acquireNextImage();
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    final byte[] imageBytes = new byte[ buffer.remaining() ];
+                    buffer.get(imageBytes);
+                    image.close();
+
+                    CameraUtils.savePhoto(mContext, mFile, imageBytes, -1);
+
                 }
+            }, null);
 
+            mCaptureSession.stopRepeating();
+            mCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                 @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    mCaptureSession = null;
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                    super.onCaptureCompleted(session, request, result);
+                    createPreviewSession();
                 }
             }, null);
 
@@ -215,19 +185,64 @@ public class Camera2Ui {
         }
     }
 
+//    private void createPhotoSession() {
+//        try {
+//            closeSession();
+//
+//            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+//            captureBuilder.addTarget(mImageReader.getSurface());
+//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+//            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraUtils.getRotationDegree(mDisplay.getRotation()));
+//
+//            List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), new Surface(mTextureView.getSurfaceTexture()));
+//            //List<Surface> outputSurfaces = Collections.singletonList(mImageReader.getSurface());
+//            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+//                @Override
+//                public void onConfigured(@NonNull CameraCaptureSession session) {
+//                    try {
+//                        mCaptureSession = session;
+//                        session.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
+//                            @Override
+//                            public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+//                                super.onCaptureCompleted(session, request, result);
+//                                // もう一度カメラのプレビュー表示を開始する.
+//                                createPreviewSession();
+//                            }
+//                        }, null);
+//                    } catch (CameraAccessException e) {
+//                        close();
+//                    }
+//                }
+//
+//                @Override
+//                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+//                    mCaptureSession = null;
+//                }
+//            }, null);
+//
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void createPreviewSession() {
         try {
             closeSession();
 
+            SurfaceTexture texture = mTextureView.getSurfaceTexture();
+            if (mPreviewSize != null) {
+                texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            }
+            Surface surface = new Surface(texture);
+
             final CaptureRequest.Builder captureBuilder;
             captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            captureBuilder.addTarget(mPreviewSurface);
+            captureBuilder.addTarget(surface);
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            //captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
-            mPreviewSurface = new Surface(mTextureView.getSurfaceTexture());
-            //List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), mPreviewSurface);
-            List<Surface> outputSurfaces = Collections.singletonList(mPreviewSurface);
+            List<Surface> outputSurfaces = Arrays.asList(surface, mImageReader.getSurface());
+            //List<Surface> outputSurfaces = Collections.singletonList(surface);
             mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
@@ -250,22 +265,22 @@ public class Camera2Ui {
         }
     }
 
+
     private String openCamera() {
         CameraManager manager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
         if (manager != null) {
             try {
-                //カメラIDを取得（背面カメラを選択）
-                String backCameraId;
                 for (String cameraId : manager.getCameraIdList()) {
                     CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
                     Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    //カメラIDを取得（背面カメラを選択）
                     if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                        backCameraId = cameraId;
                         // カメラオープン(オープン成功時に第2引数のコールバッククラスが呼ばれる)
-                        manager.openCamera(backCameraId, mStateCallback, null);
+                        manager.openCamera(cameraId, mStateCallback, null);
 
                         // カメラの搭載向き、画面の縦横から 画像の補正角度を求めておく
                         mCameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                        if (mCameraOrientation == null) mCameraOrientation = 0;
 
                         return cameraId;
                     }
@@ -287,21 +302,9 @@ public class Camera2Ui {
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
-        public void onOpened(@NonNull CameraDevice camera) {
+        public void onOpened(@NonNull CameraDevice cameraDevice) {
 
-            SurfaceTexture texture = mTextureView.getSurfaceTexture();
-            if (mPreviewSize != null) {
-                texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            }
-            mPreviewSurface = new Surface(texture);
-            mCameraDevice = camera;
-
-//            try {
-//                List<Surface> surfaces = (mImageReader != null) ? Arrays.asList(mImageReader.getSurface(), mPreviewSurface) : Collections.singletonList(mPreviewSurface);
-//                camera.createCaptureSession(surfaces, mSessionCallback, null);
-//            } catch (CameraAccessException e) {
-//                e.printStackTrace();
-//            }
+            mCameraDevice = cameraDevice;
             createPreviewSession();
         }
 
@@ -311,43 +314,10 @@ public class Camera2Ui {
         }
 
         @Override
-        public void onError(@NonNull CameraDevice cameraDevice, int i) {
+        public void onError(@NonNull CameraDevice cameraDevice, int error) {
             close();
         }
     };
-
-
-    //////////////////////////////////////////////////////////////////////
-    //
-    // CameraCaptureSession.StateCallback 実装
-    //
-
-//    private final CameraCaptureSession.StateCallback mSessionCallback = new CameraCaptureSession.StateCallback() {
-//        @Override
-//        public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-//            mCaptureSession = cameraCaptureSession;
-//            setRepeating(mCameraDevice, cameraCaptureSession);
-//
-//        }
-//
-//        @Override
-//        public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-//        }
-//    };
-
-//    private void setRepeating(CameraDevice cameraDevice, CameraCaptureSession cameraCaptureSession) {
-//        if (cameraDevice == null || cameraCaptureSession == null) return;
-//        try {
-//            CaptureRequest.Builder captureBuilder;
-//            captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-//            captureBuilder.addTarget(mPreviewSurface);
-//            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-//            cameraCaptureSession.setRepeatingRequest(captureBuilder.build(), null, null);
-//
-//        } catch (CameraAccessException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
 
     //////////////////////////////////////////////////////////////////////
@@ -422,7 +392,7 @@ public class Camera2Ui {
 
         float scale;
         float degree;
-        int cameraOrientation = adjustOrientation(mCameraOrientation);
+        int cameraOrientation = (mCameraOrientation - CameraUtils.getRotationDegree(mDisplay.getRotation()) + 360) % 360;
         switch (cameraOrientation) {
             case 90:
             case 270:
@@ -455,31 +425,6 @@ public class Camera2Ui {
         textureView.setTransform(matrix);
     }
 
-    private int adjustOrientation(Integer cameraOrientation) {
-        int orientation = (cameraOrientation != null) ? cameraOrientation : 0;
-        return ((orientation - adjustDegree()) + 360) % 360;
-    }
-
-    private int adjustDegree() {
-        switch (mDisplay.getRotation()) {
-            // 反時計回りに 90度 (横)
-            case Surface.ROTATION_90:
-                return 0;
-
-            // 時計回りに 90度 (横)
-            case Surface.ROTATION_270:
-                return 180;
-
-            // 180度 (上下逆さま)
-            case Surface.ROTATION_180:
-                return 270;
-
-            // 正位置 (縦)
-            case Surface.ROTATION_0:
-            default:
-                return 90;
-        }
-    }
 
     /////////////////////////////////////
 

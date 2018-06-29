@@ -4,18 +4,16 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
-import android.media.ExifInterface;
-import android.media.MediaScannerConnection;
 import android.os.Handler;
 import android.view.Display;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
+import com.insprout.okubo.mytool.util.CameraUtils;
+
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -171,32 +169,7 @@ public class CameraUi implements SurfaceHolder.Callback {
                     new Camera.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
-//                            FileOutputStream out = null;
-//                            try {
-//                                out = new FileOutputStream(picture);
-//                                out.write(data);
-//                            } catch (IOException ignored) {
-//                            } finally {
-//                                try {
-//                                    if (out != null) out.close();
-//                                } catch (IOException ignored) {
-//                                }
-//                            }
-//                            // 画像の回転情報をつけておく
-//                            try {
-//                                ExifInterface exif = new ExifInterface(picture.getPath());
-//                                exif.setAttribute(ExifInterface.TAG_ORIENTATION, getExifOrientation().toString());
-//                                exif.saveAttributes();
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//
-//                            MediaScannerConnection.scanFile(
-//                                    mContext,
-//                                    new String[] { picture.getAbsolutePath() },
-//                                    null,
-//                                    null);
-                            savePhoto(picture, data, getExifOrientation());
+                            CameraUtils.savePhoto(mContext, picture, data, CameraUtils.getExifOrientation(mDisplay.getRotation()));
 
                             //プレビュー再開
                             camera.startPreview();
@@ -208,84 +181,9 @@ public class CameraUi implements SurfaceHolder.Callback {
         }
     }
 
-    private void savePhoto(File picture, byte[] data, int exifOrientation) {
-        if (picture == null || data == null) return;
-
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(picture);
-            out.write(data);
-        } catch (IOException ignored) {
-        } finally {
-            try {
-                if (out != null) out.close();
-            } catch (IOException ignored) {
-            }
-        }
-        // 画像の回転情報をつけておく
-        try {
-            ExifInterface exif = new ExifInterface(picture.getPath());
-            exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(exifOrientation));
-            exif.saveAttributes();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        MediaScannerConnection.scanFile(
-                mContext,
-                new String[] { picture.getAbsolutePath() },
-                null,
-                null);
-    }
-
-    private int getExifOrientation() {
-        switch (mDisplay.getRotation()) {
-            // 反時計回りに 90度 (横)
-            case Surface.ROTATION_90:
-                //camera.setDisplayOrientation(0);
-                return ExifInterface.ORIENTATION_NORMAL;
-
-            // 時計回りに 90度 (横)
-            case Surface.ROTATION_270:
-                //camera.setDisplayOrientation(180);
-                return ExifInterface.ORIENTATION_ROTATE_180;
-
-            // 180度 (上下逆さま)
-            case Surface.ROTATION_180:
-                //camera.setDisplayOrientation(270);
-                return ExifInterface.ORIENTATION_ROTATE_270;
-
-            // 正位置 (縦)
-            case Surface.ROTATION_0:
-            default:
-                //camera.setDisplayOrientation(90);
-                return ExifInterface.ORIENTATION_ROTATE_90;
-        }
-    }
 
     private void setupCameraRotation(Camera camera) {
-        switch (mDisplay.getRotation()) {
-            // 反時計回りに 90度 (横)
-            case Surface.ROTATION_90:
-                camera.setDisplayOrientation(0);
-                break;
-
-            // 時計回りに 90度 (横)
-            case Surface.ROTATION_270:
-                camera.setDisplayOrientation(180);
-                break;
-
-            // 180度 (上下逆さま)
-            case Surface.ROTATION_180:
-                camera.setDisplayOrientation(270);
-                break;
-
-            // 正位置 (縦)
-            case Surface.ROTATION_0:
-            default:
-                camera.setDisplayOrientation(90);
-                break;
-        }
+        camera.setDisplayOrientation(CameraUtils.getRotationDegree(mDisplay.getRotation()));
     }
 
 
