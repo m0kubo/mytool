@@ -21,6 +21,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support:exifinterface:26.1.0'
     implementation 'com.googlecode.juniversalchardet:juniversalchardet:1.0.3'
 
     testImplementation 'junit:junit:4.12'

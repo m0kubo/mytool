@@ -11,15 +11,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
-import com.insprout.okubo.mytool.util.CameraUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class CameraUi implements SurfaceHolder.Callback {
+public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
     private Context mContext;
     private Display mDisplay;
@@ -46,10 +44,12 @@ public class CameraUi implements SurfaceHolder.Callback {
         });
     }
 
+    @Override
     public void open() {
         mSurfaceView.getHolder().addCallback(this);
     }
 
+    @Override
     public void close() {
         closeCamera();
         mSurfaceView.getHolder().removeCallback(this);
@@ -76,6 +76,7 @@ public class CameraUi implements SurfaceHolder.Callback {
     }
 
 
+    @Override
     public void takePicture(final File picture) {
         new Handler().post(new Runnable() {
             @Override
@@ -169,7 +170,7 @@ public class CameraUi implements SurfaceHolder.Callback {
                     new Camera.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
-                            CameraUtils.savePhoto(mContext, picture, data, CameraUtils.getExifOrientation(mDisplay.getRotation()));
+                            CameraCtrl.savePhoto(mContext, picture, data, CameraCtrl.getExifOrientation(mDisplay.getRotation()));
 
                             //プレビュー再開
                             camera.startPreview();
@@ -183,7 +184,7 @@ public class CameraUi implements SurfaceHolder.Callback {
 
 
     private void setupCameraRotation(Camera camera) {
-        camera.setDisplayOrientation(CameraUtils.getRotationDegree(mDisplay.getRotation()));
+        camera.setDisplayOrientation(CameraCtrl.getRotationDegree(mDisplay.getRotation()));
     }
 
 

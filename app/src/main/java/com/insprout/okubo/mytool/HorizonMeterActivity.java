@@ -9,7 +9,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.SurfaceView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,7 +21,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
     private Sensor mAccelerometerSensor = null;     // 加速度センサー
     private TextView mTvHorizon, mTvFace;
 
-    private PreviewUi mCameraUi;
+    private CameraCtrl mCameraUi;
 
 
     @Override
@@ -80,7 +79,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         mTvHorizon = findViewById(R.id.tv_angle);
         mTvFace = findViewById(R.id.tv_face);
 
-        mCameraUi = new PreviewUi(this, findViewById(R.id.preview));
+        mCameraUi = new CameraCtrl(this, findViewById(R.id.preview));
     }
 
 

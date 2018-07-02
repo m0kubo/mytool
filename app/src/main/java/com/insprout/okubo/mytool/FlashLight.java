@@ -69,17 +69,17 @@ public class FlashLight {
 
     private interface IFlashLight {
 
-        public void release();
+        void release();
 
-        public void turnOn();
+        void turnOn();
 
-        public void turnOff();
+        void turnOff();
 
-        public boolean toggle();
+        boolean toggle();
 
-        public boolean hasFlash();
+        boolean hasFlash();
 
-        public boolean isFlashing();
+        boolean isFlashing();
     }
 
 

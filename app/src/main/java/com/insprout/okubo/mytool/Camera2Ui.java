@@ -13,7 +13,6 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -27,8 +26,6 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
 
-import com.insprout.okubo.mytool.util.CameraUtils;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,12 +34,13 @@ import java.util.List;
 
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-public class Camera2Ui {
+public class Camera2Ui implements CameraCtrl.ICamera {
 
     private Context mContext;
     private Display mDisplay;
     private TextureView mTextureView;
-    private Integer mCameraOrientation = 0;
+    private String mCameraId = null;
+    private int mCameraOrientation = 0;
     private Size mPreviewSize = null;
 
     private CameraDevice mCameraDevice = null;
@@ -58,6 +56,7 @@ public class Camera2Ui {
     }
 
 
+    @Override
     public void open() {
         if (mTextureView.isAvailable()) {
             // TextureView初期化済み
@@ -69,39 +68,15 @@ public class Camera2Ui {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
                     // open
-                    String cameraId = openCamera();
-                    if (cameraId == null) return;       // カメラ無効
-
-                    // 目的に合う previewサイズを選択/設定する
-                    mPreviewSize = getFitPreviewSize(getSupportedPreviewSizes(cameraId), width, height);
-                    if (mPreviewSize != null) {
-                        // 画像のサイズが確定した
-                        transformView(mTextureView, mPreviewSize);      // 表示領域にサイズ反映
-                        // 確定したサイズを元に 撮影用のImageReader作成
-                        mImageReader = ImageReader.newInstance(mPreviewSize.getHeight(), mPreviewSize.getWidth(), ImageFormat.JPEG, 1);
-                        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                            @Override
-                            public void onImageAvailable(ImageReader imageReader) {
-                                // 画像撮影成功
-                                Log.d("Camera", "onImageAvailable()");
-                                Image image = imageReader.acquireNextImage();
-                                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                                final byte[] imageBytes = new byte[ buffer.remaining() ];
-                                buffer.get(imageBytes);
-                                image.close();
-
-                                CameraUtils.savePhoto(mContext, mFile, imageBytes, -1);
-
-                            }
-                        }, null);
-
-                    } else {
-                        mImageReader = null;
-                    }
+                    mCameraId = openCamera();
+                    // 目的に合う 撮影サイズを選択/設定する
+                    setupSize(mCameraId, width, height);
                 }
 
                 @Override
                 public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
+                    // 目的に合う previewサイズを選択/設定する
+                    setupSize(mCameraId, width, height);
                 }
 
                 @Override
@@ -117,6 +92,46 @@ public class Camera2Ui {
     }
 
 
+    private void setupSize(String cameraId, int width, int height) {
+        if (cameraId == null) return;
+
+        // 目的に合う previewサイズを選択/設定する
+        mPreviewSize = getFitPreviewSize(getSupportedPreviewSizes(cameraId), width, height);
+        if (mPreviewSize != null) {
+            // 画像のサイズが確定した
+            transformView(mTextureView, mPreviewSize);      // 表示領域にサイズ反映
+            // 確定したサイズを元に 撮影用のImageReader作成
+            switch(mCameraOrientation) {
+                case 90:
+                case 270:
+                    mImageReader = ImageReader.newInstance(mPreviewSize.getHeight(), mPreviewSize.getWidth(), ImageFormat.JPEG, 1);
+                    break;
+
+                default:
+                    mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
+            }
+            mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader imageReader) {
+                    // 画像撮影成功
+                    Log.d("Camera", "onImageAvailable()");
+                    Image image = imageReader.acquireNextImage();
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    final byte[] imageBytes = new byte[ buffer.remaining() ];
+                    buffer.get(imageBytes);
+                    image.close();
+
+                    CameraCtrl.savePhoto(mContext, mFile, imageBytes, -1);
+                }
+            }, null);
+
+        } else {
+            mImageReader = null;
+        }
+    }
+
+
+    @Override
     public void close() {
         closeSession();
         if (mCameraDevice != null) {
@@ -137,39 +152,17 @@ public class Camera2Ui {
     }
 
 
+    @Override
     public void takePicture(final File picture) {
         mFile = picture;
-        if (picture == null) return;
+        if (picture == null || mImageReader == null || mCameraDevice == null) return;
 
-        if (mImageReader != null && mCameraDevice != null) {
-            //createPhotoSession();
-            takePicture();
-        }
-    }
-
-    private void takePicture() {
         try {
-            final CaptureRequest.Builder captureBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraUtils.getRotationDegree(mDisplay.getRotation()));
-            mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader imageReader) {
-                    // 画像撮影成功
-                    Log.d("Camera", "onImageAvailable()");
-                    Image image = imageReader.acquireNextImage();
-                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                    final byte[] imageBytes = new byte[ buffer.remaining() ];
-                    buffer.get(imageBytes);
-                    image.close();
-
-                    CameraUtils.savePhoto(mContext, mFile, imageBytes, -1);
-
-                }
-            }, null);
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraCtrl.getRotationDegree(mDisplay.getRotation()));
 
             mCaptureSession.stopRepeating();
             mCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
@@ -185,45 +178,6 @@ public class Camera2Ui {
         }
     }
 
-//    private void createPhotoSession() {
-//        try {
-//            closeSession();
-//
-//            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-//            captureBuilder.addTarget(mImageReader.getSurface());
-//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-//            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraUtils.getRotationDegree(mDisplay.getRotation()));
-//
-//            List<Surface> outputSurfaces = Arrays.asList(mImageReader.getSurface(), new Surface(mTextureView.getSurfaceTexture()));
-//            //List<Surface> outputSurfaces = Collections.singletonList(mImageReader.getSurface());
-//            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
-//                @Override
-//                public void onConfigured(@NonNull CameraCaptureSession session) {
-//                    try {
-//                        mCaptureSession = session;
-//                        session.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
-//                            @Override
-//                            public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-//                                super.onCaptureCompleted(session, request, result);
-//                                // もう一度カメラのプレビュー表示を開始する.
-//                                createPreviewSession();
-//                            }
-//                        }, null);
-//                    } catch (CameraAccessException e) {
-//                        close();
-//                    }
-//                }
-//
-//                @Override
-//                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-//                    mCaptureSession = null;
-//                }
-//            }, null);
-//
-//        } catch (CameraAccessException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     private void createPreviewSession() {
         try {
@@ -242,7 +196,6 @@ public class Camera2Ui {
             //captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
             List<Surface> outputSurfaces = Arrays.asList(surface, mImageReader.getSurface());
-            //List<Surface> outputSurfaces = Collections.singletonList(surface);
             mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
@@ -278,9 +231,10 @@ public class Camera2Ui {
                         // カメラオープン(オープン成功時に第2引数のコールバッククラスが呼ばれる)
                         manager.openCamera(cameraId, mStateCallback, null);
 
-                        // カメラの搭載向き、画面の縦横から 画像の補正角度を求めておく
-                        mCameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                        if (mCameraOrientation == null) mCameraOrientation = 0;
+                        // カメラの搭載向きを求めておく
+                        Integer cameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                        Log.d("Camera", "CameraOrientation: " + cameraOrientation);
+                        mCameraOrientation = (cameraOrientation != null) ? cameraOrientation : 0;
 
                         return cameraId;
                     }
@@ -392,7 +346,7 @@ public class Camera2Ui {
 
         float scale;
         float degree;
-        int cameraOrientation = (mCameraOrientation - CameraUtils.getRotationDegree(mDisplay.getRotation()) + 360) % 360;
+        int cameraOrientation = (mCameraOrientation - CameraCtrl.getRotationDegree(mDisplay.getRotation()) + 360) % 360;
         switch (cameraOrientation) {
             case 90:
             case 270:

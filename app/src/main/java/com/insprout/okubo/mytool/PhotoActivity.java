@@ -9,7 +9,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -17,7 +16,7 @@ import java.util.Locale;
 
 public class PhotoActivity extends AppCompatActivity {
 
-    private PreviewUi mCameraUi;
+    private CameraCtrl mCameraUi;
     private File mFolder;
 
 
@@ -50,7 +49,7 @@ public class PhotoActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void initView() {
-        mCameraUi = new PreviewUi(this, findViewById(R.id.preview));
+        mCameraUi = new CameraCtrl(this, findViewById(R.id.preview));
     }
 
 
