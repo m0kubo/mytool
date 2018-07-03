@@ -37,15 +37,10 @@ public class PhotoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
-        initVars();
         initView();
 
     }
 
-
-    private void initVars() {
-        mFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-    }
 
     @SuppressLint("ClickableViewAccessibility")
     private void initView() {
@@ -64,7 +59,7 @@ public class PhotoActivity extends AppCompatActivity {
     private void takePhoto() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.ENGLISH);
         String fileName = "IMG_"+ dateFormat.format(new Date(System.currentTimeMillis())) + ".jpeg";
-        File filePhoto = new File(mFolder, fileName);
+        File filePhoto = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fileName);
         mCameraUi.takePicture(filePhoto);
     }
 

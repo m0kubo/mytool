@@ -102,8 +102,8 @@ public class CameraCtrl {
         if (context != null) {
             MediaScannerConnection.scanFile(
                     context,
-                    new String[]{file.getAbsolutePath()},
-                    null,
+                    new String[]{ file.getAbsolutePath() },
+                    new String[]{ "image/jpeg" },
                     null);
 
             Toast.makeText(context, "撮影完了: " + file.getPath(), Toast.LENGTH_SHORT).show();
@@ -164,6 +164,35 @@ public class CameraCtrl {
             default:
                 return ExifInterface.ORIENTATION_ROTATE_90;
         }
+    }
+
+
+    /**
+     *  (長寸 / 短寸)の値を返す
+     *  どちらかに 0以下の値が指定された場合は 0を返す
+     *  (よって結果は 0もしくは 1.0以上の正の数となる)
+     *  @param width 幅
+     *  @param height 高さ
+     *  @return 長寸/短寸
+     */
+    public static float wideRatio(int width, int height) {
+        if (width <= 0 || height <= 0) return 0f;
+        return (float)Math.max(width, height) / (float)Math.min(width, height);
+    }
+
+
+    /**
+     * 指定された2つのサイズの縦横比が同じかどうかを判別する
+     * 計算誤差を鑑み、差が1%以内なら同一比率とみなす
+     * どちらかに 0が指定された場合は、不正な比率が指定されたと見做し falseを返す
+     *  @param ratio1 比較される比率
+     *  @param ratio2 比較する比率
+     *  @return 結果
+     */
+    public static boolean isRatioEqual(float ratio1, float ratio2) {
+        if (ratio1 <= 0f || ratio2 <= 0f) return false;
+        float rate = ratio1 / ratio2;
+        return (rate >= 0.99f && rate <= 1.01f);
     }
 
 }

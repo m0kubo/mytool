@@ -78,12 +78,31 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
     @Override
     public void takePicture(final File picture) {
-        new Handler().post(new Runnable() {
-            @Override
-            public void run() {
-                determinePictureSize(picture, mCamera, mSurfaceView.getWidth(), mSurfaceView.getHeight());
-            }
-        });
+        // 対応するプレビューサイズを決定する
+        Camera.Parameters parameters = mCamera.getParameters();
+
+        // 撮影可能な画像サイズと プレビュー用サイズとは異なる。
+        // プレビュー用のサイズを決める際に、縦横比が撮影可能なサイズのものを抽出しているので、その縦横比にマッチする画像サイズを選択する
+        Camera.Size size =  selectPictureSize(parameters.getSupportedPictureSizes(), mSurfaceView.getWidth(), mSurfaceView.getHeight());
+        if (size != null) {
+            setupCameraRotation(mCamera);
+            parameters.setPictureSize(size.width, size.height);
+
+            mCamera.takePicture(
+                    null,
+                    null,
+                    new Camera.PictureCallback() {
+                        @Override
+                        public void onPictureTaken(byte[] data, Camera camera) {
+                            CameraCtrl.savePhoto(mContext, picture, data, CameraCtrl.getExifOrientation(mDisplay.getRotation()));
+
+                            //プレビュー再開
+                            camera.startPreview();
+                        }
+
+                    }
+            );
+        }
     }
 
 
@@ -129,12 +148,12 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
     private void determinePreviewSize(Camera camera, int targetWidth, int targetHeight) {
         // 対応するプレビューサイズを決定する
-        Camera.Parameters parameters = mCamera.getParameters();
+        Camera.Parameters parameters = camera.getParameters();
         // プレビュー用のサイズと、撮影できるサイズは異なる。
         // プレビュー用のサイズ群から 縦横比が撮影可能なサイズに一致するもののみを抽出する
         List<Camera.Size> sizes = availableSizes(parameters.getSupportedPreviewSizes(), parameters.getSupportedPictureSizes());
 
-        Camera.Size size = selectFitSize(sizes, wideRatio(targetWidth, targetHeight));
+        Camera.Size size = selectFitSize(sizes, CameraCtrl.wideRatio(targetWidth, targetHeight));
         if (size != null) {
             setupCameraRotation(camera);
             parameters.setPreviewSize(size.width, size.height);
@@ -149,36 +168,6 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
                 // 表示エリアより プレビュー画像の方が 高さが低い
                 mSurfaceView.getLayoutParams().height = Math.round(mSurfaceView.getWidth() * previewRatio);
             }
-
-        }
-    }
-
-    private void determinePictureSize(final File picture, Camera camera, int targetWidth, int targetHeight) {
-        // 対応するプレビューサイズを決定する
-        Camera.Parameters parameters = mCamera.getParameters();
-        // 撮影可能な画像サイズと プレビュー用サイズとは異なる。
-        // プレビュー用のサイズを決める際に、縦横比が撮影可能なサイズのものを抽出しているので、その縦横比にマッチする画像サイズを選択する
-        Camera.Size size =  selectPictureSize(parameters.getSupportedPictureSizes(), targetWidth, targetHeight);
-
-        if (size != null) {
-            setupCameraRotation(camera);
-            parameters.setPictureSize(size.width, size.height);
-
-            mCamera.takePicture(
-                    null,
-                    null,
-                    new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            CameraCtrl.savePhoto(mContext, picture, data, CameraCtrl.getExifOrientation(mDisplay.getRotation()));
-
-                            //プレビュー再開
-                            camera.startPreview();
-                        }
-
-                    }
-            );
-
         }
     }
 
@@ -244,10 +233,10 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
     }
 
     private Camera.Size selectPictureSize(List<Camera.Size> pictureSizes, int width, int height) {
-        float wideRatio = wideRatio(width, height);
+        float wideRatio = CameraCtrl.wideRatio(width, height);
         Camera.Size size = null;
         for(Camera.Size pictureSize : pictureSizes) {
-            if (isRatioEqual(wideRatio(pictureSize), wideRatio)) {
+            if (CameraCtrl.isRatioEqual(wideRatio(pictureSize), wideRatio)) {
                 if (size == null || size.width < pictureSize.width) {
                     size = pictureSize;
                 }
@@ -259,24 +248,12 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
     // 指定された2つのサイズの縦横比が同じかどうかを判別する
     // 計算誤差を鑑み、差が1%以内なら同一比率とみなす
     private boolean isRatioEqual(Camera.Size size1, Camera.Size size2) {
-        return isRatioEqual(wideRatio(size1), wideRatio(size2));
-    }
-
-    private boolean isRatioEqual(float ratio1, float ratio2) {
-        if (ratio1 == 0f || ratio2 == 0f) return false;
-        float rate = ratio1 / ratio2;
-        return (rate >= 0.99f && rate <= 1.01f);
+        return CameraCtrl.isRatioEqual(wideRatio(size1), wideRatio(size2));
     }
 
     // (長寸 / 短寸)の値を返す
     private float wideRatio(Camera.Size size) {
-        return wideRatio(size.width, size.height);
-    }
-
-    // (長寸 / 短寸)の値を返す
-    private float wideRatio(int width, int height) {
-        if (width <= 0 || height <= 0) return 0f;
-        return (float)Math.max(width, height) / (float)Math.min(width, height);
+        return CameraCtrl.wideRatio(size.width, size.height);
     }
 
 }

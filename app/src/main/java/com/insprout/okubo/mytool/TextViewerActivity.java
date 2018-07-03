@@ -148,10 +148,9 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
         }
 
         StringBuilder builder = new StringBuilder();
-        BufferedReader br = null;
-        int lineCount = 0;
-        try {
-            br = new BufferedReader(new InputStreamReader(inputStream, mCharSet));
+        // try-with-resources で BufferedReaderの close()を自動呼出しさせる
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, mCharSet))) {
+            int lineCount = 0;
             String line;
             while ((line = br.readLine()) != null) {            //1行ごとに読み込む
                 if (lineCount++ > 0) builder.append("\n");
@@ -160,12 +159,6 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
 
         } catch (IOException e) {
             return;
-
-        } finally {
-            try {
-                if (br != null) br.close();
-            } catch (IOException ignore) {
-            }
         }
 
         mTextView.setText(builder.toString());
@@ -175,14 +168,12 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
     private String detectCharSet(Uri uri) {
         if (uri == null) return null;
 
-        InputStream fis = getInputStream(uri);
-        if (fis == null) return null;
-
-        byte[] buf = new byte[4096];
         // 文字コード判定ライブラリの実装
         UniversalDetector detector = new UniversalDetector(null);
 
-        try {
+        // try-with-resources で InputStreamの close()を自動呼出しさせる
+        try (InputStream fis = getInputStream(uri)) {
+            byte[] buf = new byte[4096];
             int size;
             while ((size = fis.read(buf)) > 0 && !detector.isDone()) {
                 detector.handleData(buf, 0, size);
@@ -191,12 +182,6 @@ public class TextViewerActivity extends AppCompatActivity implements DialogUi.Di
 
         } catch (IOException e) {
             return null;
-
-        } finally {
-            try {
-                fis.close();
-            } catch (IOException ignore) {
-            }
         }
 
         return detector.getDetectedCharset();

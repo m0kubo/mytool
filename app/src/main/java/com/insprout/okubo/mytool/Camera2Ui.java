@@ -153,7 +153,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
 
     @Override
-    public void takePicture(final File picture) {
+    public void takePicture(File picture) {
         mFile = picture;
         if (picture == null || mImageReader == null || mCameraDevice == null) return;
 
@@ -301,37 +301,25 @@ public class Camera2Ui implements CameraCtrl.ICamera {
         if (sizes == null || sizes.isEmpty()) {
             return null;
         }
+        Size sizeSelected = sizes.get(0);
         if (viewWidth <= 0 || viewHeight <= 0) {
-            return sizes.get(0);
+            return sizeSelected;
         }
 
-        Size sizeSelected = null;
-        float viewRatio = wideRatio(viewWidth , viewHeight);
+        float viewRatio = CameraCtrl.wideRatio(viewWidth , viewHeight);
         float ratioSelected = 0;
         int widthSelected = 0;
         for (Size size : sizes) {
-            float ratio = wideRatio(size.getWidth(), size.getHeight());
+            float ratio = CameraCtrl.wideRatio(size.getWidth(), size.getHeight());
             int width = Math.max(size.getWidth(), size.getHeight());
-            if (isFitRatio(viewRatio, ratio, ratioSelected) && width > widthSelected) {
+            if (CameraCtrl.isRatioEqual(ratio, ratioSelected) && width < widthSelected) continue;
+            if (ratio >= ratioSelected * 0.99 && ratio <= viewRatio * 1.01) {
                 ratioSelected = ratio;
                 sizeSelected = size;
                 widthSelected = width;
             }
         }
         return sizeSelected;
-    }
-
-    private boolean isFitRatio(float viewRatio, float ratio, float ratioCandidate) {
-        return ratioCandidate <= 0 || wideRatio(ratio, viewRatio) <= wideRatio(ratio, ratioCandidate);
-    }
-
-    private float wideRatio(float width, float height) {
-        if (width <= 0 || height <= 0) return 0f;
-        if (width > height) {
-            return width / height;
-        } else {
-            return height / width;
-        }
     }
 
 
