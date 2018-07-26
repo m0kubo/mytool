@@ -36,7 +36,6 @@ import java.util.List;
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class Camera2Ui implements CameraCtrl.ICamera {
 
-    private Context mContext;
     private Display mDisplay;
     private CameraManager mCameraManager;
     private TextureView mTextureView;
@@ -47,11 +46,9 @@ public class Camera2Ui implements CameraCtrl.ICamera {
     private CameraDevice mCameraDevice = null;
     private CameraCaptureSession mCaptureSession = null;
     private ImageReader mImageReader = null;
-    private File mFile = null;
 
 
     public Camera2Ui(@NonNull Activity activity, @NonNull TextureView textureView) {
-        mContext = activity;
         mDisplay = activity.getWindowManager().getDefaultDisplay();
         mCameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         mTextureView = textureView;
@@ -132,20 +129,6 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                 default:
                     mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
             }
-            mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader imageReader) {
-                    // 画像撮影成功
-                    Log.d("Camera", "onImageAvailable()");
-                    Image image = imageReader.acquireNextImage();
-                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                    final byte[] imageBytes = new byte[ buffer.remaining() ];
-                    buffer.get(imageBytes);
-                    image.close();
-
-                    CameraCtrl.savePhoto(mContext, mFile, imageBytes, -1);
-                }
-            }, null);
 
         } else {
             mImageReader = null;
@@ -175,9 +158,24 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
 
     @Override
-    public void takePicture(File picture) {
-        mFile = picture;
+    public void takePicture(final File picture, final CameraCtrl.TakePictureListener listener) {
+//        mFile = picture;
         if (picture == null || mImageReader == null || mCameraDevice == null) return;
+
+        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader imageReader) {
+                // 画像撮影成功
+                Log.d("Camera", "onImageAvailable()");
+                Image image = imageReader.acquireNextImage();
+                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                final byte[] imageBytes = new byte[ buffer.remaining() ];
+                buffer.get(imageBytes);
+                image.close();
+
+                CameraCtrl.savePhoto(picture, imageBytes, -1, listener);
+            }
+        }, null);
 
         try {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);

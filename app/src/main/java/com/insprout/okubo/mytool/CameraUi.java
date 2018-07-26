@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
-import android.os.Handler;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -78,7 +77,7 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
 
     @Override
-    public void takePicture(final File picture) {
+    public void takePicture(final File picture, final CameraCtrl.TakePictureListener listener) {
         // 対応するプレビューサイズを決定する
         Camera.Parameters parameters = mCamera.getParameters();
 
@@ -95,7 +94,7 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
                     new Camera.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
-                            CameraCtrl.savePhoto(mContext, picture, data, CameraCtrl.getExifOrientation(mDisplay.getRotation()));
+                            CameraCtrl.savePhoto(picture, data, CameraCtrl.getExifOrientation(mDisplay.getRotation()), listener);
 
                             //プレビュー再開
                             camera.startPreview();

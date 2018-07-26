@@ -1,18 +1,16 @@
 package com.insprout.okubo.mytool;
 
 import android.app.Activity;
-import android.content.Context;
-import android.media.MediaScannerConnection;
 import android.support.media.ExifInterface;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.EventListener;
 
 public class CameraCtrl {
 
@@ -21,16 +19,19 @@ public class CameraCtrl {
     // Interface
     //
 
+    public interface TakePictureListener extends EventListener {
+        void onTakePicture(File file);
+    }
+
     interface ICamera {
 
         void open();
 
         void close();
 
-        void takePicture(File picture);
+        void takePicture(File picture, TakePictureListener listener);
 
     }
-
 
     private ICamera mCameraUi = null;
 
@@ -52,10 +53,10 @@ public class CameraCtrl {
         if (mCameraUi != null) mCameraUi.close();
     }
 
-    public void takePicture(File filePicture) {
+    public void takePicture(File filePicture, TakePictureListener listener) {
         if (filePicture == null) return;
 
-        if (mCameraUi != null) mCameraUi.takePicture(filePicture);
+        if (mCameraUi != null) mCameraUi.takePicture(filePicture, listener);
     }
 
 
@@ -68,46 +69,43 @@ public class CameraCtrl {
      * バイト列をjpegファイルとして指定の Fileに書き出し、Content管理DBに登録する
      * また、exif情報で 画像の向きも付加する
      *
-     * @param context         コンテキスト
      * @param file            出力先ファイル
      * @param data            画像データ
      * @param exifOrientation exifの画像向き情報。負の値が指定された場合はexif情報は付加しない
+     * @param listener        写真保存リスナー
      */
-    public static void savePhoto(Context context, File file, byte[] data, int exifOrientation) {
-        if (file == null || data == null) return;
+    public static void savePhoto(File file, byte[] data, int exifOrientation, TakePictureListener listener) {
+        boolean success = false;
 
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(file);
-            out.write(data);
-        } catch (IOException ignored) {
-        } finally {
+        if (file != null && data != null) {
+            FileOutputStream out = null;
             try {
-                if (out != null) out.close();
+                out = new FileOutputStream(file);
+                out.write(data);
+                success = true;
             } catch (IOException ignored) {
+                success = false;
+
+            } finally {
+                try {
+                    if (out != null) out.close();
+                } catch (IOException ignored) {
+                }
             }
-        }
 
-        if (exifOrientation >= 0) {
-            // 画像の回転情報をつけておく
-            try {
-                ExifInterface exif = new ExifInterface(file.getPath());
-                exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(exifOrientation));
-                exif.saveAttributes();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (success && exifOrientation >= 0) {
+                // 画像の回転情報をつけておく
+                try {
+                    ExifInterface exif = new ExifInterface(file.getPath());
+                    exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(exifOrientation));
+                    exif.saveAttributes();
+                } catch (IOException ignored) {
+                }
             }
+            if (!success) file.delete();
         }
 
-        if (context != null) {
-            MediaScannerConnection.scanFile(
-                    context,
-                    new String[]{ file.getAbsolutePath() },
-                    new String[]{ "image/jpeg" },
-                    null);
-
-            Toast.makeText(context, "撮影完了: " + file.getPath(), Toast.LENGTH_SHORT).show();
-        }
+        if (listener != null) listener.onTakePicture(success ? file : null);
     }
 
     /**

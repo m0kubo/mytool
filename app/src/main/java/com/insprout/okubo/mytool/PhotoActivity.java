@@ -3,10 +3,12 @@ package com.insprout.okubo.mytool;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Toast;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -60,7 +62,21 @@ public class PhotoActivity extends AppCompatActivity {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.ENGLISH);
         String fileName = "IMG_"+ dateFormat.format(new Date(System.currentTimeMillis())) + ".jpeg";
         File filePhoto = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fileName);
-        mCameraUi.takePicture(filePhoto);
+
+        mCameraUi.takePicture(filePhoto, new CameraCtrl.TakePictureListener() {
+            @Override
+            public void onTakePicture(File file) {
+                if (file != null) {
+                    Toast.makeText(PhotoActivity.this, "撮影完了: " + file.getPath(), Toast.LENGTH_SHORT).show();
+                    // コンテンツ管理DBに画像を登録
+                    MediaScannerConnection.scanFile(
+                            PhotoActivity.this,
+                            new String[]{ file.getAbsolutePath() },
+                            new String[]{ "image/jpeg" },
+                            null);
+                }
+            }
+        });
     }
 
 
