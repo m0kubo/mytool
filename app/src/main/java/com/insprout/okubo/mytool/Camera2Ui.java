@@ -38,6 +38,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
     private Context mContext;
     private Display mDisplay;
+    private CameraManager mCameraManager;
     private TextureView mTextureView;
     private String mCameraId = null;
     private int mCameraOrientation = 0;
@@ -52,7 +53,28 @@ public class Camera2Ui implements CameraCtrl.ICamera {
     public Camera2Ui(@NonNull Activity activity, @NonNull TextureView textureView) {
         mContext = activity;
         mDisplay = activity.getWindowManager().getDefaultDisplay();
+        mCameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         mTextureView = textureView;
+
+        if (mCameraManager == null) return;
+        try {
+            for (String cameraId : mCameraManager.getCameraIdList()) {
+                //if (mCameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK) {
+                Integer lensFacing = mCameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.LENS_FACING);
+                if (lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_BACK) {
+                    mCameraId = cameraId;
+                    break;
+                }
+            }
+            if (mCameraId != null) {
+                //mCameraOrientation = mCameraManager.getCameraCharacteristics(mCameraId).get(CameraCharacteristics.SENSOR_ORIENTATION);
+                Integer orientation = mCameraManager.getCameraCharacteristics(mCameraId).get(CameraCharacteristics.SENSOR_ORIENTATION);
+                if (orientation != null) mCameraOrientation = orientation;
+            }
+
+        } catch (CameraAccessException e) {
+            mCameraId = null;
+        }
     }
 
 
@@ -68,7 +90,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
                     // open
-                    mCameraId = openCamera();
+                    openCamera();
                     // 目的に合う 撮影サイズを選択/設定する
                     setupSize(mCameraId, width, height);
                 }
@@ -195,7 +217,10 @@ public class Camera2Ui implements CameraCtrl.ICamera {
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             //captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
-            List<Surface> outputSurfaces = Arrays.asList(surface, mImageReader.getSurface());
+            //List<Surface> outputSurfaces = Arrays.asList(surface, mImageReader.getSurface());
+            List<Surface> outputSurfaces = new ArrayList<>();
+            outputSurfaces.add(surface);
+            if (mImageReader != null) outputSurfaces.add(mImageReader.getSurface());
             mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
@@ -219,33 +244,15 @@ public class Camera2Ui implements CameraCtrl.ICamera {
     }
 
 
-    private String openCamera() {
-        CameraManager manager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        if (manager != null) {
-            try {
-                for (String cameraId : manager.getCameraIdList()) {
-                    CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                    //カメラIDを取得（背面カメラを選択）
-                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                        // カメラオープン(オープン成功時に第2引数のコールバッククラスが呼ばれる)
-                        manager.openCamera(cameraId, mStateCallback, null);
-
-                        // カメラの搭載向きを求めておく
-                        Integer cameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                        Log.d("Camera", "CameraOrientation: " + cameraOrientation);
-                        mCameraOrientation = (cameraOrientation != null) ? cameraOrientation : 0;
-
-                        return cameraId;
-                    }
-                }
-
-            } catch (SecurityException | CameraAccessException e) {
-                return null;
+    private void openCamera() {
+        try {
+            if (mCameraManager != null && mCameraId != null) {
+                mCameraManager.openCamera(mCameraId, mStateCallback, null);
             }
-        }
 
-        return null;
+        } catch (SecurityException | CameraAccessException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -280,10 +287,9 @@ public class Camera2Ui implements CameraCtrl.ICamera {
     //
 
     private List<Size> getSupportedPreviewSizes(String cameraId) {
-        CameraManager cameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        if (cameraManager != null) {
+        if (mCameraManager != null) {
             try {
-                StreamConfigurationMap map = cameraManager.getCameraCharacteristics(cameraId)
+                StreamConfigurationMap map = mCameraManager.getCameraCharacteristics(cameraId)
                         .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if (map != null) {
 //                    return Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
@@ -366,8 +372,5 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
         textureView.setTransform(matrix);
     }
-
-
-    /////////////////////////////////////
 
 }

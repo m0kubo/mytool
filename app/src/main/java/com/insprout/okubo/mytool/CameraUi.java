@@ -7,6 +7,7 @@ import android.hardware.Camera;
 import android.os.Handler;
 import android.view.Display;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -159,14 +160,42 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
             parameters.setPreviewSize(size.width, size.height);
 
             // 画像が歪まない様に、SurfaceViewのサイズを プレビュー画像の縦横比にあわせてリサイズする
-            float previewRatio = (float) size.width / (float) size.height;
+            float previewRatio;
+            switch (mDisplay.getRotation()) {
+                // 反時計回りに 90度 (横)
+                case Surface.ROTATION_90:
+                    camera.setDisplayOrientation(0);
+                    previewRatio = (float)size.width / (float)size.height;
+                    break;
+
+                // 時計回りに 90度 (横)
+                case Surface.ROTATION_270:
+                    camera.setDisplayOrientation(180);
+                    previewRatio = (float)size.width / (float)size.height;
+                    break;
+
+                // 180度 (上下逆さま)
+                case Surface.ROTATION_180:
+                    camera.setDisplayOrientation(270);
+                    previewRatio = (float)size.height / (float)size.width;
+                    break;
+
+                // 正位置 (縦)
+                case Surface.ROTATION_0:
+                default:
+                    camera.setDisplayOrientation(90);
+                    previewRatio = (float)size.height / (float)size.width;
+                    break;
+            }
+
+            // 画像が歪まない様に、SurfaceViewのサイズを プレビュー画像の縦横比にあわせてリサイズする
             if ((float) mSurfaceView.getWidth() / (float) mSurfaceView.getHeight() > previewRatio) {
                 // 表示エリアより プレビュー画像の方が 幅が短い
                 mSurfaceView.getLayoutParams().width = Math.round(mSurfaceView.getHeight() * previewRatio);
 
             } else {
                 // 表示エリアより プレビュー画像の方が 高さが低い
-                mSurfaceView.getLayoutParams().height = Math.round(mSurfaceView.getWidth() * previewRatio);
+                mSurfaceView.getLayoutParams().height = Math.round(mSurfaceView.getWidth() / previewRatio);
             }
         }
     }
@@ -189,7 +218,7 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
         Camera.Size candidate = null;
         float candidateRatio = 0f;
-        float candidateWidth = 0f;
+        int candidateWidth = 0;
         for (Camera.Size size : sizes) {
             float ratio = wideRatio(size);
             if (ratio >= candidateRatio && ratio <= maxWideRate && size.width > candidateWidth) {
@@ -207,11 +236,13 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
         Camera.Size candidate = sizes.get(0);
         float candidateRatio = Float.POSITIVE_INFINITY;
+        int candidateWidth = 0;
         for (Camera.Size size : sizes) {
             float ratio = wideRatio(size);
             if (ratio <= 0) continue;
-            if (ratio < candidateRatio) {
+            if (ratio < candidateRatio && size.width > candidateWidth) {
                 candidateRatio = ratio;
+                candidateWidth = size.width;
                 candidate = size;
             }
         }

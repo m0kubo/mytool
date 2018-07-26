@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private final static int REQ_ADJUST_SCALE = 100;
     private final static int REQUEST_PERMIT_CAMERA = 500;
+    private final static int REQUEST_PERMIT_PHOTO = 501;
 
     private final static int MAX_ADJUST_MILLI_VALUE = 50;
     private final static int STEP_ADJUST_MILLI_VALUE = 1;
@@ -134,20 +135,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btn_angle:
-                startHorizonMeter();
+                if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
+                    HorizonMeterActivity.startActivity(this);
+                }
+                break;
+
+            case R.id.btn_camera:
+                if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_PHOTO, REQUEST_PERMIT_PHOTO)) {
+                    PhotoActivity.startActivity(this);
+                }
                 break;
         }
     }
 
 
-    private void startHorizonMeter() {
-//        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
-//            HorizonMeterActivity.startActivity(this);
+//    private void startHorizonMeter() {
+////        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_CAMERA, REQUEST_PERMIT_CAMERA)) {
+////            HorizonMeterActivity.startActivity(this);
+////        }
+//        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_PHOTO, REQUEST_PERMIT_CAMERA)) {
+//            PhotoActivity.startActivity(this);
 //        }
-        if (SdkUtils.requestRuntimePermissions(this, PERMISSIONS_PHOTO, REQUEST_PERMIT_CAMERA)) {
-            PhotoActivity.startActivity(this);
-        }
-    }
+//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -156,10 +165,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 // PERMISSIONが すべて付与されたか確認する
                 if (SdkUtils.isGranted(grantResults)) {
                     // カメラの権限が付与された
-                    startHorizonMeter();
+                    HorizonMeterActivity.startActivity(this);
                 }
                 return;
 
+            case REQUEST_PERMIT_PHOTO:
+                // PERMISSIONが すべて付与されたか確認する
+                if (SdkUtils.isGranted(grantResults)) {
+                    // カメラの権限が付与された
+                    PhotoActivity.startActivity(this);
+                }
+                return;
         }
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

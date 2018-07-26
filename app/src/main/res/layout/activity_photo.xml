@@ -15,7 +15,7 @@
         android:layout_height="@dimen/size_circle_medium_button"
         android:layout_margin="@dimen/fab_margin"
         android:layout_gravity="end"
-        android:src="@mipmap/ic_angle"
+        android:src="@mipmap/ic_camera"
         android:background="@drawable/bg_circle"
         android:onClick="onClick"/>
 

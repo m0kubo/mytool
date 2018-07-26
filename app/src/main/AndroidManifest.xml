@@ -50,8 +50,7 @@
         </activity>
         <activity
             android:name=".PhotoActivity"
-            android:label="@string/title_photo">
-        </activity>
+            android:theme="@style/AppThemeNoTitle"/>
 
         <receiver
             android:name=".FlashLightWidget"
