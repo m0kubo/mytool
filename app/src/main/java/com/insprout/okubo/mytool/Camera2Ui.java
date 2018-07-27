@@ -19,6 +19,8 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
@@ -43,6 +45,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
     private int mCameraOrientation = 0;
     private Size mPreviewSize = null;
 
+    private Handler mUiHandler = new Handler(Looper.getMainLooper());
     private CameraDevice mCameraDevice = null;
     private CameraCaptureSession mCaptureSession = null;
     private ImageReader mImageReader = null;
@@ -175,7 +178,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
                 CameraCtrl.savePhoto(picture, imageBytes, -1, listener);
             }
-        }, null);
+        }, mUiHandler);
 
         try {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -191,7 +194,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                     super.onCaptureCompleted(session, request, result);
                     createPreviewSession();
                 }
-            }, null);
+            }, mUiHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -224,7 +227,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     try {
                         mCaptureSession = session;
-                        session.setRepeatingRequest(captureBuilder.build(), null, null);
+                        session.setRepeatingRequest(captureBuilder.build(), null, mUiHandler);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -234,7 +237,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                     mCaptureSession = null;
                 }
-            }, null);
+            }, mUiHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();

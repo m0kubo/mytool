@@ -19,7 +19,6 @@ import java.util.Locale;
 public class PhotoActivity extends AppCompatActivity {
 
     private CameraCtrl mCameraUi;
-    private File mFolder;
 
 
     @Override
