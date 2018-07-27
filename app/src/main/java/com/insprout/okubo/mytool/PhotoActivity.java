@@ -61,17 +61,17 @@ public class PhotoActivity extends AppCompatActivity {
     private void takePhoto() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.ENGLISH);
         String fileName = "IMG_"+ dateFormat.format(new Date(System.currentTimeMillis())) + ".jpeg";
-        File filePhoto = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fileName);
+        final File filePhoto = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fileName);
 
         mCameraUi.takePicture(filePhoto, new CameraCtrl.TakePictureListener() {
             @Override
-            public void onTakePicture(File file) {
-                if (file != null) {
-                    Toast.makeText(PhotoActivity.this, "撮影完了: " + file.getPath(), Toast.LENGTH_SHORT).show();
+            public void onTakePicture(boolean result) {
+                if (result) {
+                    Toast.makeText(PhotoActivity.this, "撮影完了: " + filePhoto.getPath(), Toast.LENGTH_SHORT).show();
                     // コンテンツ管理DBに画像を登録
                     MediaScannerConnection.scanFile(
                             PhotoActivity.this,
-                            new String[]{ file.getAbsolutePath() },
+                            new String[]{ filePhoto.getAbsolutePath() },
                             new String[]{ "image/jpeg" },
                             null);
                 }

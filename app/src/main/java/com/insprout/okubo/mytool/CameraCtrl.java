@@ -20,7 +20,7 @@ public class CameraCtrl {
     //
 
     public interface TakePictureListener extends EventListener {
-        void onTakePicture(File file);
+        void onTakePicture(boolean result);
     }
 
     interface ICamera {
@@ -75,16 +75,16 @@ public class CameraCtrl {
      * @param listener        写真保存リスナー
      */
     public static void savePhoto(File file, byte[] data, int exifOrientation, TakePictureListener listener) {
-        boolean success = false;
+        boolean result = false;
 
         if (file != null && data != null) {
             FileOutputStream out = null;
             try {
                 out = new FileOutputStream(file);
                 out.write(data);
-                success = true;
+                result = true;
             } catch (IOException ignored) {
-                success = false;
+                result = false;
 
             } finally {
                 try {
@@ -93,7 +93,7 @@ public class CameraCtrl {
                 }
             }
 
-            if (success && exifOrientation >= 0) {
+            if (result && exifOrientation >= 0) {
                 // 画像の回転情報をつけておく
                 try {
                     ExifInterface exif = new ExifInterface(file.getPath());
@@ -102,10 +102,10 @@ public class CameraCtrl {
                 } catch (IOException ignored) {
                 }
             }
-            if (!success) file.delete();
+            if (!result) file.delete();
         }
 
-        if (listener != null) listener.onTakePicture(success ? file : null);
+        if (listener != null) listener.onTakePicture(result);
     }
 
     /**
