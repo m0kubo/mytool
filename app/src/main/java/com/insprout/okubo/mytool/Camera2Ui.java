@@ -162,7 +162,6 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
     @Override
     public void takePicture(final File picture, final CameraCtrl.TakePictureListener listener) {
-//        mFile = picture;
         if (picture == null || mImageReader == null || mCameraDevice == null) return;
 
         mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {

@@ -19,7 +19,6 @@ import java.util.List;
 
 public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
-    private Context mContext;
     private Display mDisplay;
     private SurfaceView mSurfaceView;
     private Camera mCamera;
@@ -28,7 +27,6 @@ public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
     @SuppressLint("ClickableViewAccessibility")
     public CameraUi(Activity activity, SurfaceView surfaceView) {
-        mContext = activity;
         mDisplay = activity.getWindowManager().getDefaultDisplay();
 
         mSurfaceView = surfaceView;
