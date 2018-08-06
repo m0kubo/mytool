@@ -89,7 +89,7 @@ public class FlashLight {
     //
 
     @TargetApi(Build.VERSION_CODES.M)
-    public class FlashLight6 extends CameraManager.TorchCallback implements FlashLight.IFlashLight {
+    public class FlashLight6 implements FlashLight.IFlashLight {
         private final static String TAG = "FlashLight6";
 
         private CameraManager mCameraManager;
@@ -99,19 +99,23 @@ public class FlashLight {
         private FlashLight6(Context context) {
             mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
             if (mCameraManager != null) {
-                mCameraManager.registerTorchCallback(this, new Handler());
+                mCameraManager.registerTorchCallback(mTorchCallback, new Handler());
             }
         }
 
-        @Override
-        public void onTorchModeChanged(@NonNull String cameraId, boolean enabled) {
-            mCameraId = cameraId;
-            mFlashing = enabled;
-        }
+        private final CameraManager.TorchCallback mTorchCallback = new CameraManager.TorchCallback() {
+            @Override
+            public void onTorchModeChanged(@NonNull String cameraId, boolean enabled) {
+                super.onTorchModeChanged(cameraId, enabled);
+                mCameraId = cameraId;
+                mFlashing = enabled;
+                Log.d("Flash", "cameraId" + cameraId + " torch:" + enabled);
+            }
+        };
 
         public void release() {
             if (mCameraManager != null) {
-                mCameraManager.unregisterTorchCallback(this);
+                mCameraManager.unregisterTorchCallback(mTorchCallback);
             }
         }
 

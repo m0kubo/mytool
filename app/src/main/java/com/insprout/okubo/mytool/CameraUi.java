@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class CameraUi  implements CameraCtrl.ICamera, SurfaceHolder.Callback {
+public class CameraUi implements CameraCtrl.ICamera, SurfaceHolder.Callback {
 
     private Display mDisplay;
     private SurfaceView mSurfaceView;
