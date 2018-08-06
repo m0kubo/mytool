@@ -37,19 +37,43 @@ public abstract class CameraCtrl {
 
     //////////////////////////////////////////////////////////////////////
     //
+    // Utilityメソッド
+    //
+
+    public static CameraCtrl newInstance(Activity activity, View view) {
+        // Previewに指定されたViewによって、Cameraクラスを使用するか、Camera2クラスを使用するか判別する
+        if (view instanceof SurfaceView) {
+            return new CameraUi(activity, (SurfaceView) view);
+        } else if (view instanceof TextureView) {
+            return new Camera2Ui(activity, (TextureView) view);
+        }
+        return null;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    //
     // 共通メソッド
     //
 
     /**
-     * バイト列をjpegファイルとして指定の Fileに書き出し、Content管理DBに登録する
-     * また、exif情報で 画像の向きも付加する
-     *
+     * バイト列をjpegファイルとして指定の Fileに書き出す (exif情報は付加しない)
      * @param file            出力先ファイル
      * @param data            画像データ
-     * @param exifOrientation exifの画像向き情報。負の値が指定された場合はexif情報は付加しない
      * @param listener        写真保存リスナー
      */
-    protected void savePhoto(File file, byte[] data, int exifOrientation, TakePictureListener listener) {
+    protected void savePhoto(File file, byte[] data, TakePictureListener listener) {
+        savePhoto(file, data, -1, listener);
+    }
+
+    /**
+     * バイト列をjpegファイルとして指定の Fileに書き出す
+     * また、exif情報で 画像の向きも付加する
+     * @param file            出力先ファイル
+     * @param data            画像データ
+     * @param displayRotation 端末の向き。Display#getRotation()で得られる値
+     * @param listener        写真保存リスナー
+     */
+    protected void savePhoto(File file, byte[] data, int displayRotation, TakePictureListener listener) {
         boolean result = false;
 
         if (file != null && data != null) {
@@ -68,11 +92,11 @@ public abstract class CameraCtrl {
                 }
             }
 
-            if (result && exifOrientation >= 0) {
+            if (result && displayRotation >= 0) {
                 // 画像の回転情報をつけておく
                 try {
                     ExifInterface exif = new ExifInterface(file.getPath());
-                    exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(exifOrientation));
+                    exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer.toString(getExifOrientation(displayRotation)));
                     exif.saveAttributes();
                 } catch (IOException ignored) {
                 }
@@ -81,6 +105,35 @@ public abstract class CameraCtrl {
         }
 
         if (listener != null) listener.onTakePicture(result);
+    }
+
+
+    /**
+     * 端末の向きから、画像の向き(ExifInterface設定値)を返す
+     * ( getRotationDegree()と同等のメソッドだが、こちらは角度ではなく EXIF用の設定を返す )
+     *
+     * @param displayRotation 端末の向き。Display#getRotation()で得られる値
+     * @return 画像の向き(ExifInterface設定値)
+     */
+    private int getExifOrientation(int displayRotation) {
+        switch (displayRotation) {
+            // 反時計回りに 90度 (横)
+            case Surface.ROTATION_90:
+                return ExifInterface.ORIENTATION_NORMAL;
+
+            // 時計回りに 90度 (横)
+            case Surface.ROTATION_270:
+                return ExifInterface.ORIENTATION_ROTATE_180;
+
+            // 180度 (上下逆さま)
+            case Surface.ROTATION_180:
+                return ExifInterface.ORIENTATION_ROTATE_270;
+
+            // 正位置 (縦)
+            case Surface.ROTATION_0:
+            default:
+                return ExifInterface.ORIENTATION_ROTATE_90;
+        }
     }
 
     /**
@@ -107,35 +160,6 @@ public abstract class CameraCtrl {
             case Surface.ROTATION_0:
             default:
                 return 90;
-        }
-    }
-
-
-    /**
-     * 端末の向きから、画像の向き(ExifInterface設定値)を返す
-     * ( getRotationDegree()と同等のメソッドだが、こちらは角度ではなく EXIF用の設定を返す )
-     *
-     * @param displayRotation 端末の向き。Display#getRotation()で得られる値
-     * @return 画像の向き(ExifInterface設定値)
-     */
-    protected int getExifOrientation(int displayRotation) {
-        switch (displayRotation) {
-            // 反時計回りに 90度 (横)
-            case Surface.ROTATION_90:
-                return ExifInterface.ORIENTATION_NORMAL;
-
-            // 時計回りに 90度 (横)
-            case Surface.ROTATION_270:
-                return ExifInterface.ORIENTATION_ROTATE_180;
-
-            // 180度 (上下逆さま)
-            case Surface.ROTATION_180:
-                return ExifInterface.ORIENTATION_ROTATE_270;
-
-            // 正位置 (縦)
-            case Surface.ROTATION_0:
-            default:
-                return ExifInterface.ORIENTATION_ROTATE_90;
         }
     }
 
@@ -168,19 +192,4 @@ public abstract class CameraCtrl {
         return (rate >= 0.99f && rate <= 1.01f);
     }
 
-
-    //////////////////////////////////////////////////////////////////////
-    //
-    // Utilityメソッド
-    //
-
-    public static CameraCtrl newInstance(Activity activity, View view) {
-        // Previewに指定されたViewによって、Cameraクラスを使用するか、Camera2クラスを使用するか判別する
-        if (view instanceof SurfaceView) {
-            return new CameraUi(activity, (SurfaceView) view);
-        } else if (view instanceof TextureView) {
-            return new Camera2Ui(activity, (TextureView) view);
-        }
-        return null;
-    }
 }

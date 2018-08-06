@@ -91,7 +91,7 @@ public class CameraUi extends CameraCtrl implements SurfaceHolder.Callback {
                     new Camera.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
-                            savePhoto(picture, data, getExifOrientation(mDisplay.getRotation()), listener);
+                            savePhoto(picture, data, mDisplay.getRotation(), listener);
 
                             //プレビュー再開
                             camera.startPreview();

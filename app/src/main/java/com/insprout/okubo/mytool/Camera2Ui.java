@@ -175,7 +175,7 @@ public class Camera2Ui extends CameraCtrl {
                 buffer.get(imageBytes);
                 image.close();
 
-                savePhoto(picture, imageBytes, -1, listener);
+                savePhoto(picture, imageBytes, listener);
             }
         }, mUiHandler);
 
