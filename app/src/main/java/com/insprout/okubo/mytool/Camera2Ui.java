@@ -36,7 +36,7 @@ import java.util.List;
 
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-public class Camera2Ui implements CameraCtrl.ICamera {
+public class Camera2Ui extends CameraCtrl {
 
     private Display mDisplay;
     private CameraManager mCameraManager;
@@ -161,7 +161,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
 
     @Override
-    public void takePicture(final File picture, final CameraCtrl.TakePictureListener listener) {
+    public void takePicture(final File picture, final TakePictureListener listener) {
         if (picture == null || mImageReader == null || mCameraDevice == null) return;
 
         mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
@@ -175,7 +175,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
                 buffer.get(imageBytes);
                 image.close();
 
-                CameraCtrl.savePhoto(picture, imageBytes, -1, listener);
+                savePhoto(picture, imageBytes, -1, listener);
             }
         }, mUiHandler);
 
@@ -184,7 +184,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
             captureBuilder.addTarget(mImageReader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraCtrl.getRotationDegree(mDisplay.getRotation()));
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getRotationDegree(mDisplay.getRotation()));
 
             mCaptureSession.stopRepeating();
             mCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
@@ -312,13 +312,13 @@ public class Camera2Ui implements CameraCtrl.ICamera {
             return sizeSelected;
         }
 
-        float viewRatio = CameraCtrl.wideRatio(viewWidth , viewHeight);
+        float viewRatio = wideRatio(viewWidth , viewHeight);
         float ratioSelected = 0;
         int widthSelected = 0;
         for (Size size : sizes) {
-            float ratio = CameraCtrl.wideRatio(size.getWidth(), size.getHeight());
+            float ratio = wideRatio(size.getWidth(), size.getHeight());
             int width = Math.max(size.getWidth(), size.getHeight());
-            if (CameraCtrl.isRatioEqual(ratio, ratioSelected) && width < widthSelected) continue;
+            if (isRatioEqual(ratio, ratioSelected) && width < widthSelected) continue;
             if (ratio >= ratioSelected * 0.99 && ratio <= viewRatio * 1.01) {
                 ratioSelected = ratio;
                 sizeSelected = size;
@@ -340,7 +340,7 @@ public class Camera2Ui implements CameraCtrl.ICamera {
 
         float scale;
         float degree;
-        int cameraOrientation = (mCameraOrientation - CameraCtrl.getRotationDegree(mDisplay.getRotation()) + 360) % 360;
+        int cameraOrientation = (mCameraOrientation - getRotationDegree(mDisplay.getRotation()) + 360) % 360;
         switch (cameraOrientation) {
             case 90:
             case 270:

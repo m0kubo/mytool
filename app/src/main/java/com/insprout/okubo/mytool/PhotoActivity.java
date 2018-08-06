@@ -45,7 +45,7 @@ public class PhotoActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void initView() {
-        mCameraUi = new CameraCtrl(this, findViewById(R.id.preview));
+        mCameraUi = CameraCtrl.newInstance(this, findViewById(R.id.preview));
     }
 
 

@@ -79,7 +79,7 @@ public class HorizonMeterActivity extends AppCompatActivity implements SensorEve
         mTvHorizon = findViewById(R.id.tv_angle);
         mTvFace = findViewById(R.id.tv_face);
 
-        mCameraUi = new CameraCtrl(this, findViewById(R.id.preview));
+        mCameraUi = CameraCtrl.newInstance(this, findViewById(R.id.preview));
     }
 
 

@@ -12,7 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EventListener;
 
-public class CameraCtrl {
+public abstract class CameraCtrl {
 
     //////////////////////////////////////////////////////////////////////
     //
@@ -23,46 +23,21 @@ public class CameraCtrl {
         void onTakePicture(boolean result);
     }
 
-    interface ICamera {
+    //////////////////////////////////////////////////////////////////////
+    //
+    // abstract 宣言
+    //
 
-        void open();
+    abstract void open();
 
-        void close();
+    abstract void close();
 
-        void takePicture(File picture, TakePictureListener listener);
-
-    }
-
-    private ICamera mCameraUi = null;
-
-
-    public CameraCtrl(Activity activity, View view) {
-        // Previewに指定されたViewによって、Cameraクラスを使用するか、Camera2クラスを使用するか判別する
-        if (view instanceof SurfaceView) {
-            mCameraUi = new CameraUi(activity, (SurfaceView) view);
-        } else if (view instanceof TextureView) {
-            mCameraUi = new Camera2Ui(activity, (TextureView) view);
-        }
-    }
-
-    public void open() {
-        if (mCameraUi != null) mCameraUi.open();
-    }
-
-    public void close() {
-        if (mCameraUi != null) mCameraUi.close();
-    }
-
-    public void takePicture(File filePicture, TakePictureListener listener) {
-        if (filePicture == null) return;
-
-        if (mCameraUi != null) mCameraUi.takePicture(filePicture, listener);
-    }
+    abstract void takePicture(File picture, TakePictureListener listener);
 
 
     //////////////////////////////////////////////////////////////////////
     //
-    // Utilityメソッド
+    // 共通メソッド
     //
 
     /**
@@ -74,7 +49,7 @@ public class CameraCtrl {
      * @param exifOrientation exifの画像向き情報。負の値が指定された場合はexif情報は付加しない
      * @param listener        写真保存リスナー
      */
-    public static void savePhoto(File file, byte[] data, int exifOrientation, TakePictureListener listener) {
+    protected void savePhoto(File file, byte[] data, int exifOrientation, TakePictureListener listener) {
         boolean result = false;
 
         if (file != null && data != null) {
@@ -114,7 +89,7 @@ public class CameraCtrl {
      * @param displayRotation 端末の向き。Display#getRotation()で得られる値
      * @return カメラの補正角度(degree)
      */
-    public static int getRotationDegree(int displayRotation) {
+    protected int getRotationDegree(int displayRotation) {
         switch (displayRotation) {
             // 反時計回りに 90度 (横)
             case Surface.ROTATION_90:
@@ -143,7 +118,7 @@ public class CameraCtrl {
      * @param displayRotation 端末の向き。Display#getRotation()で得られる値
      * @return 画像の向き(ExifInterface設定値)
      */
-    public static int getExifOrientation(int displayRotation) {
+    protected int getExifOrientation(int displayRotation) {
         switch (displayRotation) {
             // 反時計回りに 90度 (横)
             case Surface.ROTATION_90:
@@ -173,7 +148,7 @@ public class CameraCtrl {
      *  @param height 高さ
      *  @return 長寸/短寸
      */
-    public static float wideRatio(int width, int height) {
+    protected float wideRatio(int width, int height) {
         if (width <= 0 || height <= 0) return 0f;
         return (float)Math.max(width, height) / (float)Math.min(width, height);
     }
@@ -187,10 +162,25 @@ public class CameraCtrl {
      *  @param ratio2 比較する比率
      *  @return 結果
      */
-    public static boolean isRatioEqual(float ratio1, float ratio2) {
+    protected boolean isRatioEqual(float ratio1, float ratio2) {
         if (ratio1 <= 0f || ratio2 <= 0f) return false;
         float rate = ratio1 / ratio2;
         return (rate >= 0.99f && rate <= 1.01f);
     }
 
+
+    //////////////////////////////////////////////////////////////////////
+    //
+    // Utilityメソッド
+    //
+
+    public static CameraCtrl newInstance(Activity activity, View view) {
+        // Previewに指定されたViewによって、Cameraクラスを使用するか、Camera2クラスを使用するか判別する
+        if (view instanceof SurfaceView) {
+            return new CameraUi(activity, (SurfaceView) view);
+        } else if (view instanceof TextureView) {
+            return new Camera2Ui(activity, (TextureView) view);
+        }
+        return null;
+    }
 }
