@@ -198,7 +198,7 @@ public class FlashLight {
                         return;
                     }
                 }
-                turnOnFlash(mOpenedCamera);
+                torch(mOpenedCamera, true);
                 mFlashing = true;
             }
         }
@@ -207,7 +207,7 @@ public class FlashLight {
             if (hasFlash()) {
                 if (mFlashing) {
                     if (mOpenedCamera != null) {
-                        turnOffFlash(mOpenedCamera);
+                        torch(mOpenedCamera, false);
                     }
                 }
                 release();      // Cameraオブジェクトを openしっぱなしだと他のアプリが カメラをコントロールできないので 都度releaseする
@@ -242,20 +242,11 @@ public class FlashLight {
             return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
         }
 
-        private void turnOnFlash(Camera camera) {
+        private void torch(Camera camera, boolean torch) {
             if (camera == null) return;
 
             Camera.Parameters params = camera.getParameters();
-            params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-            camera.setParameters(params);
-            camera.startPreview();
-        }
-
-        private void turnOffFlash(Camera camera) {
-            if (camera == null) return;
-
-            Camera.Parameters params = camera.getParameters();
-            params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            params.setFlashMode(torch ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
             camera.setParameters(params);
             camera.stopPreview();
         }

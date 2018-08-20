@@ -77,19 +77,11 @@ public abstract class CameraCtrl {
         boolean result = false;
 
         if (file != null && data != null) {
-            FileOutputStream out = null;
-            try {
-                out = new FileOutputStream(file);
+            try (FileOutputStream out = new FileOutputStream(file)) {
                 out.write(data);
                 result = true;
             } catch (IOException ignored) {
                 result = false;
-
-            } finally {
-                try {
-                    if (out != null) out.close();
-                } catch (IOException ignored) {
-                }
             }
 
             if (result && displayRotation >= 0) {
