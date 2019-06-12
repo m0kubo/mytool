@@ -18,15 +18,17 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaActionSound;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
 import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
+
+import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -49,6 +51,7 @@ public class Camera2Ui extends CameraCtrl {
     private CameraDevice mCameraDevice = null;
     private CameraCaptureSession mCaptureSession = null;
     private ImageReader mImageReader = null;
+    private MediaActionSound mMediaActionSound = null;      // シャッター音を自力で鳴らす用
 
 
     public Camera2Ui(@NonNull Activity activity, @NonNull TextureView textureView) {
@@ -111,6 +114,7 @@ public class Camera2Ui extends CameraCtrl {
                 }
             });
         }
+        mMediaActionSound = new MediaActionSound();
     }
 
 
@@ -150,6 +154,10 @@ public class Camera2Ui extends CameraCtrl {
             mImageReader.close();
             mImageReader = null;
         }
+        if (mMediaActionSound != null) {
+            mMediaActionSound.release();
+            mMediaActionSound = null;
+        }
     }
 
     private void closeSession() {
@@ -178,6 +186,8 @@ public class Camera2Ui extends CameraCtrl {
                 savePhoto(picture, imageBytes, listener);
             }
         }, mUiHandler);
+
+        mMediaActionSound.play(MediaActionSound.SHUTTER_CLICK);    // 自力でシャッター音を鳴らす場合
 
         try {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);

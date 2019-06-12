@@ -3,14 +3,14 @@ package com.insprout.okubo.mytool;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.NumberPicker;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.insprout.okubo.mytool.util.SdkUtils;
 

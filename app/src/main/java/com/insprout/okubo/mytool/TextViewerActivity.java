@@ -7,8 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -19,9 +17,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.insprout.okubo.mytool.util.SdkUtils;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
-import org.mozilla.universalchardet.UniversalDetector;
+import com.insprout.okubo.mytool.util.SdkUtils;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -30,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+
+import org.mozilla.universalchardet.UniversalDetector;
 
 
 public class TextViewerActivity extends AppCompatActivity implements DialogUi.DialogEventListener {

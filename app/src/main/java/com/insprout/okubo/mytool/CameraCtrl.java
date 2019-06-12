@@ -1,11 +1,12 @@
 package com.insprout.okubo.mytool;
 
 import android.app.Activity;
-import android.support.media.ExifInterface;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
+
+import androidx.exifinterface.media.ExifInterface;
 
 import java.io.File;
 import java.io.FileOutputStream;
